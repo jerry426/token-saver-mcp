@@ -439,21 +439,22 @@ export async function addLspTools(server: McpServer) {
       inputSchema: {},
     },
     async () => {
-      const { workspace, Uri } = await import('vscode')
-
-      // Find workspace folder
-      const workspaceFolder = workspace.workspaceFolders?.[0]
-      if (!workspaceFolder) {
+      const { workspace, Uri, extensions } = await import('vscode')
+      
+      // Get the Token Saver MCP extension
+      const extension = extensions.getExtension('jerry426.token-saver-mcp')
+      if (!extension) {
         return {
           content: [{
             type: 'text',
-            text: 'Error: No workspace folder found',
+            text: 'Error: Token Saver MCP extension not found',
           }],
         }
       }
 
-      // Try to read INSTRUCTIONS_COMBINED.md first (comprehensive guide)
-      const combinedPath = Uri.joinPath(workspaceFolder.uri, 'AI-instructions', 'INSTRUCTIONS_COMBINED.md')
+      // Try to read INSTRUCTIONS_COMBINED.md from extension directory
+      const extensionPath = Uri.file(extension.extensionPath)
+      const combinedPath = Uri.joinPath(extensionPath, 'AI-instructions', 'INSTRUCTIONS_COMBINED.md')
       
       try {
         const fileContent = await workspace.fs.readFile(combinedPath)
@@ -470,7 +471,7 @@ export async function addLspTools(server: McpServer) {
       }
       catch (combinedError) {
         // Fallback to CLAUDE-MCP-USER.md for backwards compatibility
-        const userPath = Uri.joinPath(workspaceFolder.uri, 'AI-instructions', 'CLAUDE-MCP-USER.md')
+        const userPath = Uri.joinPath(extensionPath, 'AI-instructions', 'CLAUDE-MCP-USER.md')
         
         try {
           const fileContent = await workspace.fs.readFile(userPath)
