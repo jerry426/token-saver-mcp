@@ -21,7 +21,7 @@ export interface BufferedResponse {
 }
 
 export interface BufferConfig {
-  maxTokensPerResponse: number // Default: 3000
+  maxTokensPerResponse: number // Default: 2500
   enableBuffering: boolean // Default: true
   bufferTTL: number // Buffer expiry in ms, default: 60000
   autoTruncate: boolean // Auto-truncate without asking
@@ -30,7 +30,7 @@ export interface BufferConfig {
 
 // Default configuration - much more reasonable limits
 const DEFAULT_CONFIG: BufferConfig = {
-  maxTokensPerResponse: 3000, // ~12KB of JSON - plenty for most responses
+  maxTokensPerResponse: 2500, // ~10KB of JSON - plenty for most responses
   enableBuffering: true,
   bufferTTL: 60000,
   autoTruncate: false,

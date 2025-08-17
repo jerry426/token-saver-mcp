@@ -167,6 +167,22 @@ That's it! The extension automatically:
 
 ## Usage
 
+### 🎯 IMPORTANT: For Best Results with AI Assistants
+
+**Tell your AI assistant to read the CLAUDE-MCP-USER.md file first!**
+
+```
+"Please read the CLAUDE-MCP-USER.md file to understand how to use Token Saver MCP tools effectively"
+```
+
+This ensures your AI assistant:
+- Uses Token Saver MCP tools instead of slow text searches
+- Understands all 17 available tools and their parameters
+- Follows best practices for maximum performance
+- Saves 90-99% of tokens on code navigation tasks
+
+The CLAUDE-MCP-USER.md file is the complete guide that teaches AI assistants how to leverage VSCode's Language Server intelligence instead of wasting tokens on grep/find operations.
+
 ### Status Dashboard
 
 **See all your MCP-enabled projects:**

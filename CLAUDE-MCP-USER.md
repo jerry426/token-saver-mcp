@@ -2,13 +2,13 @@
 
 > **Note for Claude Code**: You can always retrieve the latest version of this guide using the `get_instructions` tool. This ensures you have the most up-to-date usage information.
 
-## 🚨 CRITICAL: Use MCP/LSP Tools for Code Navigation
+## 🚨 CRITICAL: Use Token Saver MCP Tools for Code Navigation
 
 **This project has Token Saver MCP tools available. These MUST be your PRIMARY method for code navigation and understanding.**
 
-The MCP server provides direct access to VSCode's Language Server Protocol features, offering 100-1000x performance improvements over text-based searching with semantic understanding of code.
+The Token Saver MCP server provides direct access to VSCode's Language Server Protocol features, offering 100-1000x performance improvements over text-based searching with semantic understanding of code.
 
-## MCP Buffer System
+## Token Saver MCP Buffer System
 
 The extension includes an intelligent buffer system to prevent token overflow:
 
@@ -29,7 +29,7 @@ The extension includes an intelligent buffer system to prevent token overflow:
 - **get_references**: Groups by file with counts
 - **get_completions**: Categorizes by completion type (method, property, etc.)
 
-## MCP Server Connection
+## Token Saver MCP Server Connection
 
 ### Single VSCode Window
 - **Server URL**: `http://127.0.0.1:9527/mcp`
@@ -41,15 +41,15 @@ Each VSCode window runs on a different port. To find your workspace's port:
 python3 test/find_mcp_servers.py
 ```
 
-This shows all running MCP servers with their workspace paths. Use the URL for your specific project.
+This shows all running Token Saver MCP servers with their workspace paths. Use the URL for your specific project.
 
-## Required: Use These MCP Tools FIRST
+## Required: Use These Token Saver MCP Tools FIRST
 
-**ALWAYS attempt to use MCP tools before falling back to grep/glob/find/read commands.**
+**ALWAYS attempt to use Token Saver MCP tools before falling back to grep/glob/find/read commands.**
 
 ### Tool Priority Map
 
-| Task | USE THIS MCP Tool | NOT grep/glob/find |
+| Task | USE THIS Token Saver MCP Tool | NOT grep/glob/find |
 |------|------------------|-------------------|
 | **Search for any symbol/text** | `search_text` | ❌ Don't grep for text patterns |
 | Find where a function/variable/class is defined | `get_definition` | ❌ Don't grep for "function name" |
@@ -65,7 +65,7 @@ This shows all running MCP servers with their workspace paths. Use the URL for y
 | Rename a symbol throughout codebase | `rename_symbol` | ❌ Don't find/replace text |
 | Get syntax highlighting info | `get_semantic_tokens` | ❌ Don't parse syntax manually |
 
-### Why MCP Tools Are Superior
+### Why Token Saver MCP Tools Are Superior
 
 1. **Type-aware**: Understands language semantics, not just text
 2. **Instant**: Leverages VSCode's pre-computed indexes
@@ -117,7 +117,7 @@ RIGHT ✅:
 3. Use get_references to understand usage context
 ```
 
-## MCP Tool Parameters
+## Token Saver MCP Tool Parameters
 
 ### Tools that DON'T need location:
 
@@ -260,7 +260,7 @@ RIGHT ✅:
 - **Parameters**: None required
 
 ### get_instructions
-- **Purpose**: Get comprehensive usage instructions for all MCP tools
+- **Purpose**: Get comprehensive usage instructions for all Token Saver MCP tools
 - **Use when**: Need to understand how to use the tools, best practices, or workflows
 - **Returns**: Complete contents of this guide (CLAUDE-MCP-USER.md)
 - **Parameters**: None required
@@ -297,7 +297,7 @@ Need to find something in code?
 
 ## Performance Comparison
 
-| Operation | MCP Tool Time | Grep/Search Time | Improvement |
+| Operation | Token Saver MCP Time | Grep/Search Time | Improvement |
 |-----------|--------------|------------------|-------------|
 | Find definition | ~10ms | 1-10s | 100-1000x |
 | Find all references | ~50ms | 10-60s | 200-1200x |
@@ -309,21 +309,21 @@ Need to find something in code?
 
 ## ⚠️ Important Reminders
 
-1. **MCP tools work on any file in the workspace** - The language server has already indexed your entire project
+1. **Token Saver MCP tools work on any file in the workspace** - The language server has already indexed your entire project
 2. **Most tools need a starting position** - You must provide a file location where the symbol appears (line/character). Use `search_text` to find symbols by name across the workspace
 3. **URIs must be absolute** - Always use full file:// paths
-4. **Try MCP first, fall back to search** - Even if unsure, try MCP tools first
+4. **Try Token Saver MCP first, fall back to search** - Even if unsure, try Token Saver MCP tools first
 5. **Port auto-increment** - If 9527 is busy, the extension tries 9528, 9529, etc.
 
 ## Integration Instructions for Your Project
 
-To enable MCP tools for your project:
+To enable Token Saver MCP tools for your project:
 
 1. Install the Token Saver MCP extension in VSCode
 2. Ensure the extension is running (check status bar)
 3. Add this guide to your project's CLAUDE.md or AI instructions
-4. The MCP server will be available at `http://127.0.0.1:9527/mcp`
+4. The Token Saver MCP server will be available at `http://127.0.0.1:9527/mcp`
 
 ---
 
-**Remember**: Every time you use grep/find instead of MCP tools, you're choosing the slow, inaccurate path. The language server has already indexed and understood your code - use it!
+**Remember**: Every time you use grep/find instead of Token Saver MCP tools, you're choosing the slow, inaccurate path. The language server has already indexed and understood your code - use it!

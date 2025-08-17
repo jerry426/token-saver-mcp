@@ -160,13 +160,13 @@ Extension settings (in VSCode settings.json):
 
 All tools feature automatic Language Server activation - no manual file opening required!
 
-## 🔴 REMINDER: MCP Tools Are Your Primary Navigation Method
+## 🔴 REMINDER: Token Saver MCP Tools Are Your Primary Navigation Method
 
-**You have direct access to VSCode's Language Server via MCP tools. USE THEM!**
+**You have direct access to VSCode's Language Server via Token Saver MCP tools. USE THEM!**
 
 Before using ANY file search or reading tools:
-1. Check if an MCP tool can do it better (it usually can)
-2. MCP tools understand types, imports, and language semantics
+1. Check if a Token Saver MCP tool can do it better (it usually can)
+2. Token Saver MCP tools understand types, imports, and language semantics
 3. They're 100-1000x faster than text search
 
 The MCP server at `http://127.0.0.1:9527/mcp` is running and ready. The proxy will route to the correct VSCode instance automatically.
