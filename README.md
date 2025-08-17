@@ -13,7 +13,7 @@ Every time your AI assistant searches your code, it's:
 - 💸 **Costing you money** in API fees
 - 🔄 **Repeatedly searching** the same code
 
-**Meanwhile, VSCode already knows everything about your code.**
+**Meanwhile, VSCode's Language Server subsystem already knows everything about your code.**
 
 Token Saver MCP gives AI instant access to that knowledge. No searching. No waiting. No token waste.
 
