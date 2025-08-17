@@ -158,12 +158,41 @@ That's it! The extension automatically:
 
 ## Installation
 
-1. Install from VSCode Marketplace (when published)
-2. Or build from source:
+VSCode Marketplace publishing is coming soon! Until then, here are your installation options:
+
+### Option 1: Install from Pre-built Release (Recommended)
+
+1. **Download the latest .vsix file** from the [Releases](https://github.com/jerry426/token-saver-mcp/releases) page
+2. **Install in VSCode** using one of these methods:
+   - Command Palette: `Extensions: Install from VSIX...` then select the file
+   - Terminal: `code --install-extension token-saver-mcp-*.vsix`
+   - Or drag and drop the .vsix file onto the VSCode Extensions view
+3. **Reload VSCode** to activate the extension
+
+### Option 2: Build from Source
+
+1. **Clone and build the extension:**
    ```bash
+   git clone https://github.com/jerry426/token-saver-mcp.git
+   cd token-saver-mcp
    pnpm install
    pnpm run build
    ```
+
+2. **Create the extension package:**
+   ```bash
+   pnpm run vsix
+   # This creates token-saver-mcp-*.vsix in the current directory
+   ```
+
+3. **Install the .vsix file in VSCode:**
+   ```bash
+   code --install-extension token-saver-mcp-*.vsix
+   ```
+
+4. **Reload VSCode** to activate the extension:
+   - Command Palette: `Developer: Reload Window`
+   - Or restart VSCode
 
 ## Usage
 
