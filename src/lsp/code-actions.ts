@@ -32,10 +32,10 @@ export async function getCodeActions(
 
       // Open the document to ensure it's available for code actions
       const document = await vscode.workspace.openTextDocument(parsedUri)
-      
+
       // Store the currently active editor before opening new one
       const previousActiveEditor = vscode.window.activeTextEditor
-      
+
       // Show the document briefly to ensure it's active
       const editor = await vscode.window.showTextDocument(document, {
         preview: false,
@@ -63,45 +63,46 @@ export async function getCodeActions(
 
         // Format code actions for return
         const results = actions.map((action) => {
-        const result: any = {
-          title: action.title,
-        }
-
-        // Add kind if available
-        if (action.kind) {
-          result.kind = action.kind.value
-        }
-
-        // Add description if available
-        if (action.command) {
-          result.command = {
-            title: action.command.title,
-            command: action.command.command,
+          const result: any = {
+            title: action.title,
           }
-        }
 
-        // Add diagnostics that this action addresses
-        if (action.diagnostics && action.diagnostics.length > 0) {
-          result.diagnostics = action.diagnostics.map(d => ({
-            message: d.message,
-            severity: d.severity,
-            range: {
-              start: { line: d.range.start.line, character: d.range.start.character },
-              end: { line: d.range.end.line, character: d.range.end.character },
-            },
-          }))
-        }
+          // Add kind if available
+          if (action.kind) {
+            result.kind = action.kind.value
+          }
 
-        // Note if this action is preferred
-        if (action.isPreferred) {
-          result.isPreferred = true
-        }
+          // Add description if available
+          if (action.command) {
+            result.command = {
+              title: action.command.title,
+              command: action.command.command,
+            }
+          }
+
+          // Add diagnostics that this action addresses
+          if (action.diagnostics && action.diagnostics.length > 0) {
+            result.diagnostics = action.diagnostics.map(d => ({
+              message: d.message,
+              severity: d.severity,
+              range: {
+                start: { line: d.range.start.line, character: d.range.start.character },
+                end: { line: d.range.end.line, character: d.range.end.character },
+              },
+            }))
+          }
+
+          // Note if this action is preferred
+          if (action.isPreferred) {
+            result.isPreferred = true
+          }
 
           return result
         })
 
         return results
-      } finally {
+      }
+      finally {
         // Close the editor we opened by closing the tab in the side column
         // First, make the opened editor active
         await vscode.window.showTextDocument(editor.document, {
@@ -110,10 +111,10 @@ export async function getCodeActions(
         })
         // Then close it
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-        
+
         // Notify user that we're closing the file
         vscode.window.showInformationMessage(`Token Saver MCP: Closed ${parsedUri.path.split('/').pop()}`)
-        
+
         // Restore focus to previous editor if there was one
         if (previousActiveEditor) {
           await vscode.window.showTextDocument(previousActiveEditor.document, {

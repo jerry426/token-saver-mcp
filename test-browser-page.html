@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Saver MCP - Browser Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin: 5px;
+            width: 200px;
+        }
+        #output {
+            background: #1e1e1e;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            min-height: 100px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        .form-section {
+            background: #f0f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.ready { background: #48bb78; color: white; }
+        .status.error { background: #f56565; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Token Saver MCP Browser Integration</h1>
+        <p class="subtitle">Chrome DevTools Protocol Test Page</p>
+        
+        <div class="test-section">
+            <h3>Console Testing <span class="status ready">READY</span></h3>
+            <button onclick="testConsole()">Log Message</button>
+            <button onclick="testError()">Log Error</button>
+            <button onclick="testMultiple()">Multiple Logs</button>
+            <button onclick="clearConsole()">Clear Console</button>
+        </div>
+
+        <div class="test-section">
+            <h3>DOM Interaction</h3>
+            <button onclick="updateDOM()">Update DOM</button>
+            <button onclick="createElements()">Create Elements</button>
+            <button id="clickMe" onclick="handleClick()">Click Me!</button>
+            <div id="dynamicContent"></div>
+        </div>
+
+        <div class="form-section">
+            <h3>Form Testing</h3>
+            <form id="testForm" onsubmit="handleSubmit(event)">
+                <input type="text" id="username" placeholder="Username" />
+                <input type="email" id="email" placeholder="Email" />
+                <input type="password" id="password" placeholder="Password" />
+                <button type="submit">Submit Form</button>
+            </form>
+        </div>
+
+        <div class="test-section">
+            <h3>Async Operations</h3>
+            <button onclick="fetchData()">Fetch Data</button>
+            <button onclick="startTimer()">Start Timer</button>
+            <button onclick="throwError()">Throw Error</button>
+        </div>
+
+        <div id="output">Console output will appear here...</div>
+    </div>
+
+    <script>
+        // Initialize
+        console.log('🎉 Token Saver MCP Browser Test Page Loaded');
+        console.log('CDP can capture all these console messages!');
+        
+        let outputDiv = document.getElementById('output');
+        let messageCount = 0;
+
+        function addOutput(msg) {
+            outputDiv.textContent += `[${++messageCount}] ${msg}\n`;
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+
+        // Console testing functions
+        function testConsole() {
+            const msg = `Test message at ${new Date().toLocaleTimeString()}`;
+            console.log(msg);
+            addOutput(`LOG: ${msg}`);
+        }
+
+        function testError() {
+            const error = `Error occurred at ${new Date().toLocaleTimeString()}`;
+            console.error(error);
+            addOutput(`ERROR: ${error}`);
+        }
+
+        function testMultiple() {
+            console.log('First message');
+            console.warn('Warning message');
+            console.info('Info message');
+            console.debug('Debug message');
+            console.error('Error message');
+            addOutput('Sent 5 different console messages');
+        }
+
+        function clearConsole() {
+            console.clear();
+            outputDiv.textContent = 'Console cleared\n';
+            messageCount = 0;
+        }
+
+        // DOM interaction functions
+        function updateDOM() {
+            document.getElementById('dynamicContent').innerHTML = 
+                `<p style="color: #667eea; font-weight: bold;">DOM updated at ${new Date().toLocaleTimeString()}</p>`;
+            console.log('DOM updated successfully');
+            addOutput('DOM updated');
+        }
+
+        function createElements() {
+            const container = document.getElementById('dynamicContent');
+            const newDiv = document.createElement('div');
+            newDiv.style.padding = '10px';
+            newDiv.style.background = '#e6f3ff';
+            newDiv.style.borderRadius = '6px';
+            newDiv.style.margin = '10px 0';
+            newDiv.innerHTML = `
+                <strong>New Element Created!</strong><br>
+                <span>Timestamp: ${new Date().toLocaleTimeString()}</span>
+            `;
+            container.appendChild(newDiv);
+            console.log('New element created');
+            addOutput('Created new DOM element');
+        }
+
+        function handleClick() {
+            console.log('Button clicked!');
+            addOutput('Click event triggered');
+            document.getElementById('clickMe').style.background = '#48bb78';
+            setTimeout(() => {
+                document.getElementById('clickMe').style.background = '#667eea';
+            }, 500);
+        }
+
+        // Form handling
+        function handleSubmit(event) {
+            event.preventDefault();
+            const formData = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value ? '[hidden]' : '[empty]'
+            };
+            console.log('Form submitted:', formData);
+            addOutput(`Form submitted: ${JSON.stringify(formData)}`);
+            return false;
+        }
+
+        // Async operations
+        async function fetchData() {
+            console.log('Fetching data...');
+            addOutput('Starting fetch...');
+            try {
+                const response = await fetch('https://api.github.com/repos/anthropics/claude-code');
+                const data = await response.json();
+                console.log('Data fetched:', data);
+                addOutput(`Fetched: ${data.full_name} - ⭐ ${data.stargazers_count} stars`);
+            } catch (error) {
+                console.error('Fetch failed:', error);
+                addOutput(`Fetch error: ${error.message}`);
+            }
+        }
+
+        let timerInterval;
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            let seconds = 0;
+            console.log('Timer started');
+            addOutput('Timer started (updates every second)');
+            timerInterval = setInterval(() => {
+                seconds++;
+                console.log(`Timer: ${seconds} seconds`);
+                if (seconds >= 5) {
+                    clearInterval(timerInterval);
+                    console.log('Timer stopped at 5 seconds');
+                    addOutput('Timer stopped');
+                }
+            }, 1000);
+        }
+
+        function throwError() {
+            console.error('Intentional error for testing');
+            addOutput('Throwing error...');
+            setTimeout(() => {
+                throw new Error('This is an intentional uncaught error for CDP testing');
+            }, 100);
+        }
+
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            console.error('Global error caught:', event.error);
+            addOutput(`UNCAUGHT ERROR: ${event.error.message}`);
+        });
+    </script>
+</body>
+</html>

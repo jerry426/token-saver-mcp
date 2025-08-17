@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when DEVELOPING the 
 
 ## For MCP Tool Usage
 
-**See [CLAUDE-MCP-USER.md](./CLAUDE-MCP-USER.md) for the complete guide on using MCP tools.**
+**See [AI-instructions/INSTRUCTIONS_COMBINED.md](./AI-instructions/INSTRUCTIONS_COMBINED.md) for the complete guide on using MCP tools.**
 
-When working on THIS codebase, you MUST follow the MCP tool usage guidelines in CLAUDE-MCP-USER.md. The MCP server at `http://127.0.0.1:9527/mcp` provides direct access to VSCode's language intelligence.
+When working on THIS codebase, you MUST follow the MCP tool usage guidelines. The MCP server at `http://127.0.0.1:9527/mcp` provides direct access to VSCode's language intelligence and browser control.
 
 ## Project Overview
 

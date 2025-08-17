@@ -1,9 +1,20 @@
-# Token Saver MCP - Stop Wasting AI Tokens
+# Token Saver MCP - AI as a Full-Stack Developer
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/jerry426/token-saver-mcp)](https://github.com/jerry426/token-saver-mcp)
 
-> **Stop watching AI burn thousands of tokens on simple code searches.**
+> **Transform AI from a code suggester into a true full-stack developer with complete control over both backend code and frontend browsers.**
+
+## 🆕 What's New in v1.0
+
+**Chrome DevTools Protocol Integration** - AI can now:
+- 🌐 Control real browsers programmatically
+- 🧪 Test React components automatically
+- 🐛 Debug JavaScript errors in real-time
+- 📊 Analyze performance metrics
+- ✅ Verify code changes instantly
+
+This isn't just an incremental improvement - it's a **paradigm shift** in AI-assisted development.
 
 ## The Hidden Cost You Don't See
 
@@ -19,14 +30,21 @@ Token Saver MCP gives AI instant access to that knowledge. No searching. No wait
 
 ## What This Extension Does
 
-Token Saver MCP bridges Language Server Protocol (LSP) with Model Context Protocol (MCP), giving AI assistants direct access to VSCode's already-indexed code intelligence - delivering answers in **milliseconds instead of seconds** with **90% fewer tokens**.
+Token Saver MCP provides **TWO revolutionary toolsets** that transform AI into a true full-stack developer:
+
+### 🔍 Language Server Protocol (LSP) Tools
+Gives AI direct access to VSCode's already-indexed code intelligence - delivering answers in **milliseconds instead of seconds** with **90% fewer tokens**.
+
+### 🌐 Chrome DevTools Protocol (CDP) Tools 
+Gives AI complete control over Chrome browsers for testing, debugging, and automation - enabling **instant verification** of code changes in real browsers.
 
 ## Proven Results
 
 - ⚡ **100-1000x faster** than text-based searching
-- 🎯 **17 production-ready tools** 
+- 🎯 **30+ production-ready tools** (17 LSP + 13+ CDP)
 - 🛡️ **Intelligent buffer protection** prevents token overflow
 - 🔄 **Zero configuration** for single projects
+- 🚀 **Full-stack capabilities** - backend code + frontend browser
 
 ## Real-World Performance
 
@@ -50,6 +68,32 @@ Token Saver MCP bridges Language Server Protocol (LSP) with Model Context Protoc
 | **Yearly cost** | **$2,700** | **$27** | **$2,673 saved** |
 
 *Based on typical development patterns and AI code assistant pricing. Your savings may vary.
+
+## 🌐 Revolutionary Browser Control (NEW!)
+
+Token Saver MCP now includes **Chrome DevTools Protocol integration**, giving AI complete browser control:
+
+### Browser Testing & Automation Tools
+| Tool | What It Does | Example Use |
+|------|--------------|-------------|
+| `test_react_component` | Test React components instantly | Verify component renders with correct props |
+| `test_api_endpoint` | Test APIs from browser context | Check CORS, auth, response times |
+| `test_form_validation` | Test forms completely | Submit, validate, check errors |
+| `check_page_performance` | Analyze performance metrics | Get load times, memory usage, recommendations |
+| `debug_javascript_error` | Debug JS errors in real-time | Capture stack traces, identify issues |
+
+### Full-Stack Development Workflow
+```
+1. AI writes backend API endpoint (LSP tools)
+2. AI launches browser automatically (CDP tools)
+3. AI tests the API from frontend (CDP tools)
+4. AI sees any errors immediately (CDP tools)
+5. AI fixes the code (LSP tools)
+6. AI verifies the fix works (CDP tools)
+```
+
+**No more**: "Please test this manually and tell me if it works"
+**Now**: AI tests everything itself, instantly!
 
 ## Before & After Comparison
 
@@ -120,6 +164,16 @@ This extension exposes VSCode's Language Server Protocol features through MCP, p
 - **Text Search** (`search_text`) - Search for text patterns across all files
 - **Semantic Tokens** (`get_semantic_tokens`) - Get detailed syntax highlighting information
 
+### Browser Control & Testing (CDP Tools)
+- **Test React Component** (`test_react_component`) - Complete React component testing
+- **Test API Endpoint** (`test_api_endpoint`) - Test APIs with CORS checks from browser
+- **Test Form Validation** (`test_form_validation`) - Automated form testing
+- **Check Page Performance** (`check_page_performance`) - Performance metrics & analysis
+- **Debug JavaScript Error** (`debug_javascript_error`) - Capture and analyze JS errors
+- **Execute in Browser** (`execute_in_browser`) - Run any JavaScript in browser context
+- **Navigate Browser** (`navigate_browser`) - Control browser navigation
+- **Click/Type/Screenshot** - Full browser automation capabilities
+
 ### System & Utilities
 - **Buffer Retrieval** (`retrieve_buffer`) - Retrieve full data from buffered responses
 - **Buffer Statistics** (`get_buffer_stats`) - Monitor buffer system usage
@@ -181,8 +235,9 @@ VSCode Marketplace publishing is coming soon! Until then, here are your installa
 
 2. **Create the extension package:**
    ```bash
-   pnpm run vsix
+   pnpm exec vsce package --no-dependencies
    # This creates token-saver-mcp-*.vsix in the current directory
+   # Note: --no-dependencies flag is required due to bundled dependencies
    ```
 
 3. **Install the .vsix file in VSCode:**
