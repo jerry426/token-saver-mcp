@@ -141,7 +141,7 @@ The extension includes a sophisticated buffer system to prevent token overflow:
 - **Instant results**: <100ms response time vs 10-30 seconds with grep
 - **Semantic accuracy**: Real code intelligence, not text pattern matching
 - **Zero additional cost**: Leverages existing VSCode computation
-- **Works across your workspace**: After activating the Language Server (by opening one file of that type), all files are accessible
+- **Works across your workspace**: Automatic Language Server activation for any file type - no manual setup needed
 
 ## 🚀 Get Started in 30 Seconds
 
