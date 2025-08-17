@@ -15,7 +15,7 @@
     "Other"
   ],
   "main": "./dist/index.js",
-  "icon": "res/icon.webp",
+  "icon": "res/icon.png",
   "files": [
     "LICENSE.md",
     "dist/*",
