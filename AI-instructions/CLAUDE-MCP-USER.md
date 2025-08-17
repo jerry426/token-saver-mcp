@@ -1,6 +1,18 @@
-# Token Saver MCP Tools Usage Guide
+# Token Saver MCP Tools Usage Guide - LSP Tools
 
 > **Note for Claude Code**: You can always retrieve the latest version of this guide using the `get_instructions` tool. This ensures you have the most up-to-date usage information.
+
+## 📚 Token Saver MCP = Two Complementary Toolsets
+
+Token Saver MCP provides **TWO powerful toolsets** that work together:
+
+1. **LSP Tools** (this document) - Code navigation and understanding
+2. **CDP Browser Tools** - Browser control and testing
+
+**For complete overview**: See TOKEN_SAVER_OVERVIEW.md (in this directory)
+**For browser tools**: See BROWSER_HELPERS_DOCUMENTATION.md (in this directory)
+
+---
 
 ## 🚨 CRITICAL: Use Token Saver MCP Tools for Code Navigation
 
@@ -327,3 +339,21 @@ To enable Token Saver MCP tools for your project:
 ---
 
 **Remember**: Every time you use grep/find instead of Token Saver MCP tools, you're choosing the slow, inaccurate path. The language server has already indexed and understood your code - use it!
+
+## 🌐 Additional Capability: Browser Control Tools
+
+Token Saver MCP also includes **Chrome DevTools Protocol (CDP) tools** for complete browser automation:
+
+### High-Level Browser Helpers:
+- `test_react_component` - One-call React component testing
+- `test_api_endpoint` - Complete API testing with CORS checks
+- `test_form_validation` - Form submission and validation testing
+- `check_page_performance` - Performance metrics and recommendations
+- `debug_javascript_error` - Advanced error capture and analysis
+
+### Low-Level Browser Control:
+- `execute_in_browser`, `navigate_browser`, `click_element`, `type_in_browser`, etc.
+
+**Full documentation**: See BROWSER_HELPERS_DOCUMENTATION.md (in this directory)
+
+The combination of LSP tools (this document) + CDP tools (browser) = Complete full-stack development capabilities!

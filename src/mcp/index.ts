@@ -180,7 +180,7 @@ export async function startMcp() {
         })
 
         // Add LSP tools to the server
-        addLspTools(singletonServer)
+        await addLspTools(singletonServer)
 
         // Connect to the MCP server
         await singletonServer.connect(singletonTransport)

@@ -23,7 +23,7 @@ const uriDesc = `The file URI in encoded format:
 - Unix-like: "file:///home/user/file.ts"
 Must start with "file:///" and have special characters URI-encoded`
 
-export function addLspTools(server: McpServer) {
+export async function addLspTools(server: McpServer) {
   server.registerTool(
     'get_completions',
     {
@@ -435,13 +435,13 @@ export function addLspTools(server: McpServer) {
     'get_instructions',
     {
       title: 'Get Usage Instructions',
-      description: 'Get comprehensive instructions on how to use the Token Saver MCP tools. Returns the complete usage guide including tool descriptions, parameters, workflows, and best practices.',
+      description: 'Get comprehensive instructions for ALL Token Saver MCP tools (both LSP and CDP). Returns a complete guide with tool descriptions, decision trees, examples, and workflows for both code navigation and browser control.',
       inputSchema: {},
     },
     async () => {
       const { workspace, Uri } = await import('vscode')
 
-      // Find CLAUDE-MCP-USER.md in the workspace
+      // Find workspace folder
       const workspaceFolder = workspace.workspaceFolders?.[0]
       if (!workspaceFolder) {
         return {
@@ -452,14 +452,15 @@ export function addLspTools(server: McpServer) {
         }
       }
 
-      const instructionsPath = Uri.joinPath(workspaceFolder.uri, 'CLAUDE-MCP-USER.md')
-
+      // Try to read INSTRUCTIONS_COMBINED.md first (comprehensive guide)
+      const combinedPath = Uri.joinPath(workspaceFolder.uri, 'AI-instructions', 'INSTRUCTIONS_COMBINED.md')
+      
       try {
-        const fileContent = await workspace.fs.readFile(instructionsPath)
+        const fileContent = await workspace.fs.readFile(combinedPath)
         const instructions = new TextDecoder().decode(fileContent)
-
-        logger.info('Returned usage instructions from CLAUDE-MCP-USER.md')
-
+        
+        logger.info('Returned combined instructions from AI-instructions/INSTRUCTIONS_COMBINED.md')
+        
         return {
           content: [{
             type: 'text',
@@ -467,15 +468,41 @@ export function addLspTools(server: McpServer) {
           }],
         }
       }
-      catch (error) {
-        logger.error('Failed to read CLAUDE-MCP-USER.md', error)
-        return {
-          content: [{
-            type: 'text',
-            text: `Error: Could not read CLAUDE-MCP-USER.md. Please ensure the file exists in the workspace root. Error: ${error}`,
-          }],
+      catch (combinedError) {
+        // Fallback to CLAUDE-MCP-USER.md for backwards compatibility
+        const userPath = Uri.joinPath(workspaceFolder.uri, 'AI-instructions', 'CLAUDE-MCP-USER.md')
+        
+        try {
+          const fileContent = await workspace.fs.readFile(userPath)
+          const instructions = new TextDecoder().decode(fileContent)
+          
+          logger.info('Returned usage instructions from CLAUDE-MCP-USER.md (fallback)')
+          
+          return {
+            content: [{
+              type: 'text',
+              text: instructions,
+            }],
+          }
+        }
+        catch (userError) {
+          logger.error('Failed to read instructions files', { combinedError, userError })
+          return {
+            content: [{
+              type: 'text',
+              text: `Error: Could not read instructions. Please ensure INSTRUCTIONS_COMBINED.md or CLAUDE-MCP-USER.md exists in the AI-instructions directory.`,
+            }],
+          }
         }
       }
     },
   )
+
+  // Add browser tools
+  const { addBrowserTools } = await import('./browser-tools')
+  addBrowserTools(server)
+  
+  // Add browser helper tools
+  const { addBrowserHelpers } = await import('./browser-helpers')
+  addBrowserHelpers(server)
 }
