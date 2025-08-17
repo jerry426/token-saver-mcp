@@ -1,0 +1,89 @@
+{
+  "name": "token-saver-mcp",
+  "displayName": "Token Saver MCP",
+  "version": "1.0.0",
+  "description": "Stop watching AI burn tokens on text searches. Get instant answers from VSCode's already-indexed code intelligence. 100x faster, 90% fewer tokens.",
+  "publisher": "jerry426",
+  "author": "Jerry Jackson <https://github.com/jerry426>",
+  "license": "MIT",
+  "homepage": "https://github.com/jerry426/token-saver-mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jerry426/token-saver-mcp"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/index.js",
+  "icon": "res/icon.webp",
+  "files": [
+    "LICENSE.md",
+    "dist/*",
+    "res/*"
+  ],
+  "engines": {
+    "vscode": "^1.97.0"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Token Saver MCP Server Configuration",
+      "properties": {
+        "lsp-mcp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable the Token Saver MCP server."
+        },
+        "lsp-mcp.port": {
+          "type": "number",
+          "default": 9527,
+          "description": "Port for the Token Saver MCP server."
+        },
+        "lsp-mcp.maxRetries": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum number of port retry attempts when the default port is occupied."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch --sourcemap",
+    "prepare": "nr update",
+    "update": "vscode-ext-gen --output src/generated/meta.ts",
+    "lint": "eslint .",
+    "vscode:prepublish": "nr build",
+    "publish": "vsce publish --no-dependencies",
+    "vsix": "vsce package --no-dependencies",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "release": "bumpp && nr publish"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.0",
+    "express": "^5.1.0",
+    "zod": "^3.25.74"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^4.2.1",
+    "@antfu/ni": "^23.3.1",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.13.4",
+    "@types/vscode": "^1.97.0",
+    "@vscode/vsce": "^3.2.2",
+    "bumpp": "^10.0.3",
+    "tsup": "^8.5.0",
+    "eslint": "^9.20.1",
+    "esno": "^4.8.0",
+    "pnpm": "^10.4.1",
+    "reactive-vscode": "^0.2.10",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^3.0.5",
+    "vscode-ext-gen": "^1.0.0"
+  }
+}

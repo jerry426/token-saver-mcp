@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Token Saver MCP - Main Management Script
+# This is the entry point for all MCP setup and management tasks
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SETUP_DIR="$SCRIPT_DIR/setup"
+
+BOLD='\033[1m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+show_help() {
+    echo -e "${BOLD}Token Saver MCP - Management Tool${NC}"
+    echo ""
+    echo "Usage: ./mcp [command] [options]"
+    echo ""
+    echo -e "${BOLD}Commands:${NC}"
+    echo "  setup [path]     - Set up MCP for a project (default: current directory)"
+    echo "  status           - Show status of all MCP-enabled projects"
+    echo "  claude [path]    - Generate Claude configuration for a project"
+    echo "  find             - Find all running MCP servers"
+    echo "  test [path]      - Test MCP tools for a project"
+    echo "  help             - Show this help message"
+    echo ""
+    echo -e "${BOLD}Examples:${NC}"
+    echo "  ./mcp setup                    # Setup current directory"
+    echo "  ./mcp setup ~/my-project       # Setup specific project"
+    echo "  ./mcp status                   # View all projects status"
+    echo "  ./mcp claude ~/my-project      # Get Claude command for project"
+    echo ""
+}
+
+case "$1" in
+    setup)
+        shift
+        exec "$SETUP_DIR/auto_setup_mcp.sh" "$@"
+        ;;
+    
+    status)
+        exec python3 "$SETUP_DIR/mcp_status.py"
+        ;;
+    
+    claude)
+        shift
+        exec python3 "$SETUP_DIR/setup_claude_mcp.py" "$@"
+        ;;
+    
+    find)
+        exec python3 "$SCRIPT_DIR/test/find_mcp_servers.py"
+        ;;
+    
+    test)
+        shift
+        PROJECT_PATH="${1:-$(pwd)}"
+        if [ -f "$PROJECT_PATH/.lsp_mcp_port" ]; then
+            PORT=$(cat "$PROJECT_PATH/.lsp_mcp_port")
+            echo -e "${GREEN}Testing MCP server on port $PORT...${NC}"
+            curl -s "http://127.0.0.1:$PORT/workspace-info" | python3 -m json.tool
+        else
+            echo -e "${YELLOW}No .lsp_mcp_port file found in $PROJECT_PATH${NC}"
+            echo "Run './mcp setup $PROJECT_PATH' first"
+        fi
+        ;;
+    
+    help|--help|-h|"")
+        show_help
+        ;;
+    
+    *)
+        echo -e "${YELLOW}Unknown command: $1${NC}"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac

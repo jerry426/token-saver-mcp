@@ -1,0 +1,17 @@
+.cache
+.DS_Store
+.idea
+*.log
+*.tgz
+*.vsix
+coverage
+dist
+lib-cov
+logs
+node_modules
+temp
+src/generated
+.hidden
+.lsp_mcp_port
+.lsp_mcp_workspace_id
+.lsp_mcp_status.json

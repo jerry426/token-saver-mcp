@@ -1,0 +1,31 @@
+{
+  "name": "${PROJECT_NAME}",
+  "port": "${PORT}",
+  "autoStart": true,
+  "languageServers": {
+    "typescript": {
+      "enabled": true,
+      "initTimeout": 30000
+    },
+    "javascript": {
+      "enabled": true,
+      "initTimeout": 30000
+    }
+  },
+  "features": {
+    "hover": true,
+    "completions": true,
+    "definitions": true,
+    "references": true,
+    "implementations": true,
+    "documentSymbols": true,
+    "callHierarchy": true,
+    "rename": true,
+    "textSearch": true
+  },
+  "limits": {
+    "maxSearchResults": 100,
+    "maxSymbolResults": 50,
+    "responseTokenLimit": 20000
+  }
+}
