@@ -308,17 +308,42 @@ export class CDPClient {
   }
 
   /**
-   * Click an element
+   * Click an element (with React support)
    */
   async click(selector: string): Promise<void> {
     const expression = `
       (() => {
         const element = document.querySelector('${selector}')
-        if (element) {
-          element.click()
-          return true
+        if (!element) return false
+        
+        // Try React onClick first
+        const reactPropsKey = Object.keys(element).find(key => 
+          key.startsWith('__reactProps') || key.startsWith('__reactFiber')
+        )
+        
+        if (reactPropsKey) {
+          const reactProps = element[reactPropsKey]
+          if (reactProps && reactProps.onClick) {
+            // Create a synthetic event that React expects
+            const syntheticEvent = {
+              target: element,
+              currentTarget: element,
+              preventDefault: () => {},
+              stopPropagation: () => {},
+              nativeEvent: new MouseEvent('click', { bubbles: true, cancelable: true }),
+              bubbles: true,
+              cancelable: true,
+              timeStamp: Date.now(),
+              type: 'click'
+            }
+            reactProps.onClick(syntheticEvent)
+            return true
+          }
         }
-        return false
+        
+        // Fallback to standard click
+        element.click()
+        return true
       })()
     `
 
@@ -329,26 +354,60 @@ export class CDPClient {
   }
 
   /**
-   * Type text into an input
+   * Type text into an input (with React support)
    */
   async type(selector: string, text: string): Promise<void> {
     const expression = `
       (() => {
         const element = document.querySelector('${selector}')
-        if (element) {
-          element.value = '${text.replace(/'/g, '\\\'')}'
-          element.dispatchEvent(new Event('input', { bubbles: true }))
-          element.dispatchEvent(new Event('change', { bubbles: true }))
-          return true
+        if (!element) return { success: false, error: 'Element not found' }
+        
+        // Try React-specific approach first
+        const reactPropsKey = Object.keys(element).find(key => 
+          key.startsWith('__reactProps') || key.startsWith('__reactFiber')
+        )
+        
+        if (reactPropsKey) {
+          const reactProps = element[reactPropsKey]
+          if (reactProps && reactProps.onChange) {
+            // Use React's onChange handler directly
+            element.value = '${text.replace(/'/g, '\\\'')}'
+            reactProps.onChange({ 
+              target: { 
+                value: '${text.replace(/'/g, '\\\'')}',
+                name: element.name,
+                id: element.id
+              },
+              currentTarget: element,
+              bubbles: true,
+              cancelable: true
+            })
+            return { success: true, method: 'react' }
+          }
         }
-        return false
+        
+        // Fallback to standard DOM events
+        element.value = '${text.replace(/'/g, '\\\'')}'
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype, 
+          'value'
+        ).set
+        nativeInputValueSetter.call(element, '${text.replace(/'/g, '\\\'')}')
+        
+        // Dispatch events in the correct order for maximum compatibility
+        element.dispatchEvent(new Event('input', { bubbles: true }))
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+        
+        return { success: true, method: 'dom' }
       })()
     `
 
-    const typed = await this.execute(expression)
-    if (!typed) {
+    const result = await this.execute(expression)
+    if (!result.success) {
       throw new Error(`Input not found: ${selector}`)
     }
+    
+    logger.info(`Typed into ${selector} using ${result.method} method`)
   }
 
   /**
