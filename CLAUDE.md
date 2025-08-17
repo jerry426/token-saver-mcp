@@ -131,34 +131,34 @@ Extension settings (in VSCode settings.json):
 - The extension automatically handles port conflicts by trying successive ports
 - Multiple VSCode instances can run simultaneously with different ports
 - The MCP server URL for AI tools: `http://127.0.0.1:{port}/mcp`
-- All LSP operations require an active text editor with the target file open
+- All LSP operations automatically activate the required Language Server if needed
 - URI parameters in MCP tools must be properly encoded file:// URIs
 - Python test clients available in `test/` directory for debugging
 
-## Roadmap - Features to Implement
+## Complete Feature Set - All 17 Tools
 
-### Completed (9 tools working)
+### LSP Tools (13 tools)
 1. ✅ **get_hover** - Documentation and type information
 2. ✅ **get_completions** - Code completion suggestions
 3. ✅ **get_definition** - Jump to symbol definitions
-4. ✅ **get_references** - Find all usages
-5. ✅ **find_implementations** - Find interface/class implementations (v0.0.6)
-6. ✅ **get_document_symbols** - File structure/outline (v0.0.10)
-7. ✅ **get_call_hierarchy** - Trace function calls (v0.0.11)
-8. ✅ **rename_symbol** - Safe refactoring across workspace
-9. ✅ **search_text** - Text pattern search (replaced find_workspace_symbols)
+4. ✅ **get_type_definition** - Navigate to type definitions
+5. ✅ **get_references** - Find all usages
+6. ✅ **find_implementations** - Find interface/class implementations
+7. ✅ **get_document_symbols** - File structure/outline
+8. ✅ **get_call_hierarchy** - Trace function calls
+9. ✅ **rename_symbol** - Safe refactoring across workspace
+10. ✅ **get_code_actions** - Get available quick fixes and refactorings
+11. ✅ **get_diagnostics** - Get errors/warnings
+12. ✅ **get_semantic_tokens** - Semantic highlighting info
+13. ✅ **search_text** - Text pattern search across workspace
 
-### To Implement - High Priority
-1. **get_type_definition** - Navigate to type definitions (`vscode.executeTypeDefinitionProvider`)
-2. **get_code_actions** - Get available quick fixes (`vscode.executeCodeActionProvider`)
-3. **get_diagnostics** - Get errors/warnings (`vscode.languages.getDiagnostics`)
+### System Tools (4 tools)
+14. ✅ **retrieve_buffer** - Retrieve full data from buffered responses
+15. ✅ **get_buffer_stats** - Monitor buffer system status
+16. ✅ **get_instructions** - Self-documenting API guide
+17. ✅ **get_supported_languages** - List all VSCode languages and their status
 
-### To Implement - Lower Priority
-4. **get_semantic_tokens** - Semantic highlighting info
-5. **get_folding_ranges** - Code folding regions
-6. **get_selection_ranges** - Smart selection expansion
-
-Reference: GitHub issue https://github.com/anthropics/claude-code/issues/5495
+All tools feature automatic Language Server activation - no manual file opening required!
 
 ## 🔴 REMINDER: MCP Tools Are Your Primary Navigation Method
 
