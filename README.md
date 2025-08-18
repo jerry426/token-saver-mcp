@@ -175,7 +175,7 @@ The results speak for themselves - typically **100-1000x faster** with **90-99% 
 
 ## Features
 
-This extension exposes VSCode's Language Server Protocol features through MCP, providing AI assistants with **17 powerful tools**:
+This extension exposes VSCode's Language Server Protocol and Chrome DevTools Protocol features through MCP, providing AI assistants with **30 powerful tools**:
 
 ### Core Navigation & Intelligence
 - **Go to Definition** (`get_definition`) - Navigate to symbol definitions
