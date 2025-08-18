@@ -6,6 +6,7 @@ import { Uri, window, workspace } from 'vscode'
 import { logger } from '../utils'
 import { cleanupBuffers } from './buffer-manager'
 import { addLspTools } from './tools'
+import { registerSimpleRestEndpoints } from './simple-rest'
 
 // Map to store transports by session ID with metadata
 interface SessionInfo {
@@ -991,6 +992,9 @@ export async function startMcp() {
 
   const app = express()
   app.use(express.json())
+
+  // Register simple REST endpoints (works with curl, Gemini CLI, etc.)
+  registerSimpleRestEndpoints(app, metrics)
 
   // Endpoint to get current session (for reconnection)
   app.get('/session-info', (_req, res) => {
