@@ -285,19 +285,22 @@ VSCode Marketplace publishing is coming soon! Until then, here are your installa
 
 ### 🎯 IMPORTANT: For Best Results with AI Assistants
 
-**Tell your AI assistant to read the CLAUDE-MCP-USER.md file first!**
+**Tell your AI assistant to use the get_instructions tool!**
 
 ```
-"Please read the CLAUDE-MCP-USER.md file to understand how to use Token Saver MCP tools effectively"
+"Please use the get_instructions MCP tool to understand how to use Token Saver MCP tools effectively"
 ```
+
+The `get_instructions` tool returns the CLAUDE-MCP-USER.md documentation instantly through the MCP protocol - much more efficient than having the AI read the file directly.
 
 This ensures your AI assistant:
 - Uses Token Saver MCP tools instead of slow text searches
-- Understands all 17 available tools and their parameters
+- Understands all 30 available tools and their parameters (13 LSP + 13 CDP + 4 System)
 - Follows best practices for maximum performance
 - Saves 90-99% of tokens on code navigation tasks
+- Has direct control over Edge/Chrome browsers for frontend testing and verification
 
-The CLAUDE-MCP-USER.md file is the complete guide that teaches AI assistants how to leverage VSCode's Language Server intelligence instead of wasting tokens on grep/find operations.
+Token Saver MCP provides both backend code intelligence (LSP) and frontend browser control (CDP), making your AI a true full-stack developer capable of writing, testing, and verifying code changes in real browsers.
 
 ### 📊 Real-Time Developer Dashboard
 
