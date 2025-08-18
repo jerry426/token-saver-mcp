@@ -1,7 +1,31 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { getCDPClient } from '../cdp-bridge/cdp-client'
+import { getCDPClient, resetCDPClient } from '../cdp-bridge/cdp-client'
 import { logger } from '../utils'
+
+/**
+ * Ensure CDP client is connected and healthy, recovering if needed
+ */
+async function ensureCDPConnection(): Promise<ReturnType<typeof getCDPClient>> {
+  let client = getCDPClient()
+  
+  // Check if connection is healthy
+  const isHealthy = await client.isHealthy()
+  
+  if (!isHealthy) {
+    logger.info('CDP connection unhealthy, resetting client...')
+    resetCDPClient()
+    client = getCDPClient()
+  }
+  
+  // Connect if not active
+  if (!client.isActive()) {
+    logger.info('Connecting to Chrome via CDP...')
+    await client.connect()
+  }
+  
+  return client
+}
 
 /**
  * High-level browser helper tools that wrap common CDP operations
@@ -42,11 +66,7 @@ export function addBrowserHelpers(server: McpServer) {
     },
     async ({ url, componentName, waitForSelector }) => {
       try {
-        const client = getCDPClient()
-        
-        if (!client.isActive()) {
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
         
         await client.navigate(url)
         
@@ -160,11 +180,7 @@ export function addBrowserHelpers(server: McpServer) {
     },
     async ({ url, endpoint, method = 'GET', body, headers }) => {
       try {
-        const client = getCDPClient()
-        
-        if (!client.isActive()) {
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
         
         await client.navigate(url)
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -289,11 +305,7 @@ export function addBrowserHelpers(server: McpServer) {
     },
     async ({ url, formSelector, fields, submitButtonSelector }) => {
       try {
-        const client = getCDPClient()
-        
-        if (!client.isActive()) {
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
         
         await client.navigate(url)
         await client.waitForSelector(formSelector)
@@ -482,11 +494,7 @@ export function addBrowserHelpers(server: McpServer) {
     },
     async ({ url, waitTime = 3000 }) => {
       try {
-        const client = getCDPClient()
-        
-        if (!client.isActive()) {
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
         
         // Clear any existing marks
         await client.execute('performance.clearMarks(); performance.clearMeasures();')
@@ -664,11 +672,7 @@ export function addBrowserHelpers(server: McpServer) {
     },
     async ({ url, triggerAction, waitBeforeTrigger = 1000 }) => {
       try {
-        const client = getCDPClient()
-        
-        if (!client.isActive()) {
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
         
         // Set up error capture before navigation
         await client.execute(`

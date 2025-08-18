@@ -1,7 +1,31 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { getCDPClient } from '../cdp-bridge/cdp-client'
+import { getCDPClient, resetCDPClient } from '../cdp-bridge/cdp-client'
 import { logger } from '../utils'
+
+/**
+ * Ensure CDP client is connected and healthy, recovering if needed
+ */
+async function ensureCDPConnection(): Promise<ReturnType<typeof getCDPClient>> {
+  let client = getCDPClient()
+  
+  // Check if connection is healthy
+  const isHealthy = await client.isHealthy()
+  
+  if (!isHealthy) {
+    logger.info('CDP connection unhealthy, resetting client...')
+    resetCDPClient()
+    client = getCDPClient()
+  }
+  
+  // Connect if not active
+  if (!client.isActive()) {
+    logger.info('Connecting to Chrome via CDP...')
+    await client.connect()
+  }
+  
+  return client
+}
 
 /**
  * Register browser-related MCP tools for Chrome DevTools Protocol
@@ -19,13 +43,7 @@ export function addBrowserTools(server: McpServer) {
     },
     async ({ expression, url }) => {
       try {
-        const client = getCDPClient()
-
-        // Connect if not already connected
-        if (!client.isActive()) {
-          logger.info('Connecting to Chrome via CDP...')
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
 
         // Navigate if URL provided
         if (url) {
@@ -39,14 +57,27 @@ export function addBrowserTools(server: McpServer) {
         logger.info(`Executing: ${expression.substring(0, 100)}...`)
         const result = await client.execute(expression)
 
+        // Try to get page info with timeout
+        let pageInfo = null
+        try {
+          pageInfo = await Promise.race([
+            client.getPageInfo(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Page info timeout')), 1000)
+            )
+          ])
+        } catch (err) {
+          logger.warn('Could not get page info:', err)
+        }
+        
+        const response: any = { success: true }
+        if (result !== undefined) response.result = result
+        if (pageInfo) response.pageInfo = pageInfo
+        
         return {
           content: [{
             type: 'text',
-            text: JSON.stringify({
-              success: true,
-              result,
-              pageInfo: await client.getPageInfo(),
-            }, null, 2),
+            text: JSON.stringify(response, null, 2),
           }],
         }
       }
@@ -77,13 +108,7 @@ export function addBrowserTools(server: McpServer) {
     },
     async ({ filter, clear }) => {
       try {
-        const client = getCDPClient()
-
-        // Connect if not already connected
-        if (!client.isActive()) {
-          logger.info('Connecting to Chrome via CDP...')
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
 
         // Get console messages
         const messages = client.getConsoleMessages(filter)
@@ -137,20 +162,25 @@ export function addBrowserTools(server: McpServer) {
     },
     async ({ url }) => {
       try {
-        const client = getCDPClient()
-
-        // Connect if not already connected
-        if (!client.isActive()) {
-          logger.info('Connecting to Chrome via CDP...')
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
 
         // Navigate to URL
         logger.info(`Navigating to: ${url}`)
         await client.navigate(url)
 
-        // Get page info after navigation
-        const pageInfo = await client.getPageInfo()
+        // Try to get page info, but don't let it block the response
+        let pageInfo = null
+        try {
+          pageInfo = await Promise.race([
+            client.getPageInfo(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Page info timeout')), 2000)
+            )
+          ])
+        } catch (err) {
+          logger.warn('Could not get page info after navigation:', err)
+          pageInfo = { url, title: 'Unknown', readyState: 'unknown' }
+        }
 
         return {
           content: [{
@@ -187,13 +217,7 @@ export function addBrowserTools(server: McpServer) {
     },
     async () => {
       try {
-        const client = getCDPClient()
-
-        // Connect if not already connected
-        if (!client.isActive()) {
-          logger.info('Connecting to Chrome via CDP...')
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
 
         // Get DOM snapshot
         const snapshot = await client.getDOMSnapshot()
@@ -234,13 +258,7 @@ export function addBrowserTools(server: McpServer) {
     },
     async ({ selector }) => {
       try {
-        const client = getCDPClient()
-
-        // Connect if not already connected
-        if (!client.isActive()) {
-          logger.info('Connecting to Chrome via CDP...')
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
 
         // Click the element
         logger.info(`Clicking element: ${selector}`)
@@ -283,13 +301,7 @@ export function addBrowserTools(server: McpServer) {
     },
     async ({ selector, text }) => {
       try {
-        const client = getCDPClient()
-
-        // Connect if not already connected
-        if (!client.isActive()) {
-          logger.info('Connecting to Chrome via CDP...')
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
 
         // Type into the input
         logger.info(`Typing into: ${selector}`)
@@ -330,13 +342,7 @@ export function addBrowserTools(server: McpServer) {
     },
     async () => {
       try {
-        const client = getCDPClient()
-
-        // Connect if not already connected
-        if (!client.isActive()) {
-          logger.info('Connecting to Chrome via CDP...')
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
 
         // Take screenshot
         logger.info('Taking screenshot...')
@@ -380,13 +386,7 @@ export function addBrowserTools(server: McpServer) {
     },
     async ({ selector, timeout }) => {
       try {
-        const client = getCDPClient()
-
-        // Connect if not already connected
-        if (!client.isActive()) {
-          logger.info('Connecting to Chrome via CDP...')
-          await client.connect()
-        }
+        const client = await ensureCDPConnection()
 
         // Wait for element
         logger.info(`Waiting for element: ${selector}`)

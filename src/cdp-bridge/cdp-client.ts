@@ -435,6 +435,30 @@ export class CDPClient {
   }
 
   /**
+   * Check if WebSocket connection is healthy
+   */
+  async isHealthy(): Promise<boolean> {
+    if (!this.isActive()) {
+      return false
+    }
+    
+    try {
+      // Try a simple CDP command to test the connection
+      await this.client.Runtime.evaluate({ expression: '1+1' })
+      return true
+    } catch (error: any) {
+      // Check for WebSocket closed error
+      if (error.message?.includes('WebSocket') || error.message?.includes('closed')) {
+        logger.warn('WebSocket connection is closed')
+        this.isConnected = false
+        return false
+      }
+      // Other errors might be recoverable
+      return true
+    }
+  }
+
+  /**
    * Disconnect from CDP
    */
   async disconnect(): Promise<void> {
@@ -459,4 +483,18 @@ export function getCDPClient(): CDPClient {
     cdpClient = new CDPClient({ launchBrowser: true })
   }
   return cdpClient
+}
+
+/**
+ * Reset the CDP client singleton (useful for recovering from closed connections)
+ */
+export function resetCDPClient(): void {
+  if (cdpClient) {
+    logger.info('Resetting CDP client singleton')
+    // Try to disconnect cleanly if possible
+    cdpClient.disconnect().catch(() => {
+      // Ignore errors during disconnect
+    })
+    cdpClient = null
+  }
 }
