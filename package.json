@@ -29,6 +29,13 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "commands": [
+      {
+        "command": "token-saver-mcp.checkForUpdates",
+        "title": "Token Saver MCP: Check for Updates",
+        "category": "Token Saver"
+      }
+    ],
     "configuration": {
       "type": "object",
       "title": "Token Saver MCP Server Configuration",
@@ -66,8 +73,10 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.15.0",
+    "@types/semver": "^7.7.0",
     "chrome-remote-interface": "^0.33.3",
     "express": "^5.1.0",
+    "semver": "^7.7.2",
     "zod": "^3.25.74"
   },
   "devDependencies": {

@@ -499,6 +499,14 @@ function getDashboardHTML(): string {
                     <span class="metric-label">Mode</span>
                     <span class="metric-value" id="server-mode">Sessionless</span>
                 </div>
+                <div class="metric">
+                    <span class="metric-label">Version</span>
+                    <span class="metric-value" id="version-info">v1.0.2</span>
+                </div>
+                <div id="update-notification" style="display: none; margin-top: 10px; padding: 8px; background: #fef3c7; border-radius: 5px; font-size: 0.85em;">
+                    🎉 <strong>Update Available!</strong> 
+                    <a href="#" id="update-link" target="_blank" style="color: #92400e;">View Release</a>
+                </div>
                 <div class="workspace-info">
                     <div class="metric-label">Workspace</div>
                     <div class="workspace-path" id="workspace-path">Loading...</div>
@@ -854,11 +862,33 @@ function getDashboardHTML(): string {
         }
         
         // Initialize dashboard
+        async function checkForUpdates() {
+            try {
+                const response = await fetch('https://api.github.com/repos/jerry426/token-saver-mcp/releases/latest');
+                if (response.ok) {
+                    const release = await response.json();
+                    const latestVersion = release.tag_name.replace(/^v/, '');
+                    const currentVersion = '1.0.2';
+                    
+                    // Simple version comparison (assumes semantic versioning)
+                    if (latestVersion > currentVersion) {
+                        document.getElementById('update-notification').style.display = 'block';
+                        document.getElementById('update-link').href = release.html_url;
+                        document.getElementById('version-info').innerHTML = 
+                            \`v\${currentVersion} <span style="color: #92400e;">(v\${latestVersion} available)</span>\`;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check for updates:', error);
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             fetchMetrics();
             fetchWorkspaceInfo();
             fetchTools();
             connectSSE();
+            checkForUpdates();
             
             // Auto-refresh every 5 seconds
             setInterval(fetchMetrics, 5000);
