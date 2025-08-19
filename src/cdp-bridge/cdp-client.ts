@@ -406,7 +406,7 @@ export class CDPClient {
     if (!result.success) {
       throw new Error(`Input not found: ${selector}`)
     }
-    
+
     logger.info(`Typed into ${selector} using ${result.method} method`)
   }
 
@@ -441,12 +441,13 @@ export class CDPClient {
     if (!this.isActive()) {
       return false
     }
-    
+
     try {
       // Try a simple CDP command to test the connection
       await this.client.Runtime.evaluate({ expression: '1+1' })
       return true
-    } catch (error: any) {
+    }
+    catch (error: any) {
       // Check for WebSocket closed error
       if (error.message?.includes('WebSocket') || error.message?.includes('closed')) {
         logger.warn('WebSocket connection is closed')

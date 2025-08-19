@@ -1,7 +1,7 @@
-import { logger } from '../utils'
-import * as vscode from 'vscode'
-import * as https from 'https'
+import * as https from 'node:https'
 import * as semver from 'semver'
+import * as vscode from 'vscode'
+import { logger } from '../utils'
 
 interface GitHubRelease {
   tag_name: string
@@ -60,29 +60,33 @@ export class UpdateChecker {
 
         // Find VSIX asset
         const vsixAsset = latestRelease.assets.find(asset => asset.name.endsWith('.vsix'))
-        
+
         // Show update notification
         const message = `Token Saver MCP v${latestVersion} is available! (Current: v${currentVersion})`
         const actions = ['View Release', 'Download VSIX']
-        if (silent) actions.push('Dismiss')
-        
+        if (silent)
+          actions.push('Dismiss')
+
         const selection = await vscode.window.showInformationMessage(message, ...actions)
-        
+
         if (selection === 'View Release') {
           vscode.env.openExternal(vscode.Uri.parse(latestRelease.html_url))
-        } else if (selection === 'Download VSIX' && vsixAsset) {
+        }
+        else if (selection === 'Download VSIX' && vsixAsset) {
           vscode.env.openExternal(vscode.Uri.parse(vsixAsset.browser_download_url))
-        } else if (selection === 'Dismiss') {
+        }
+        else if (selection === 'Dismiss') {
           await context.globalState.update(this.DISMISSED_VERSION_KEY, latestVersion)
         }
-      } else if (!silent) {
+      }
+      else if (!silent) {
         vscode.window.showInformationMessage(`Token Saver MCP is up to date! (v${currentVersion})`)
       }
 
       // Update last check timestamp
       await context.globalState.update(this.LAST_CHECK_KEY, Date.now())
-      
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Failed to check for updates:', error)
       if (!silent) {
         vscode.window.showErrorMessage('Failed to check for updates')
@@ -98,8 +102,8 @@ export class UpdateChecker {
       const options = {
         headers: {
           'User-Agent': 'Token-Saver-MCP',
-          'Accept': 'application/vnd.github.v3+json'
-        }
+          'Accept': 'application/vnd.github.v3+json',
+        },
       }
 
       https.get(this.GITHUB_API_URL, options, (res) => {
@@ -114,11 +118,13 @@ export class UpdateChecker {
             if (res.statusCode === 200) {
               const release = JSON.parse(data) as GitHubRelease
               resolve(release)
-            } else {
+            }
+            else {
               logger.warn(`GitHub API returned status ${res.statusCode}`)
               resolve(null)
             }
-          } catch (error) {
+          }
+          catch (error) {
             logger.error('Failed to parse GitHub release:', error)
             resolve(null)
           }
@@ -137,12 +143,12 @@ export class UpdateChecker {
     try {
       const currentVersion = context.extension.packageJSON.version
       const latestRelease = await this.fetchLatestRelease()
-      
+
       if (!latestRelease) {
         return {
           current: currentVersion,
           latest: null,
-          updateAvailable: false
+          updateAvailable: false,
         }
       }
 
@@ -154,14 +160,15 @@ export class UpdateChecker {
         latest: latestVersion,
         updateAvailable,
         releaseUrl: latestRelease.html_url,
-        publishedAt: latestRelease.published_at
+        publishedAt: latestRelease.published_at,
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Failed to get update status:', error)
       return {
         current: context.extension.packageJSON.version,
         latest: null,
-        updateAvailable: false
+        updateAvailable: false,
       }
     }
   }

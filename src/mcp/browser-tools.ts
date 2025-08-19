@@ -8,22 +8,22 @@ import { logger } from '../utils'
  */
 async function ensureCDPConnection(): Promise<ReturnType<typeof getCDPClient>> {
   let client = getCDPClient()
-  
+
   // Check if connection is healthy
   const isHealthy = await client.isHealthy()
-  
+
   if (!isHealthy) {
     logger.info('CDP connection unhealthy, resetting client...')
     resetCDPClient()
     client = getCDPClient()
   }
-  
+
   // Connect if not active
   if (!client.isActive()) {
     logger.info('Connecting to Chrome via CDP...')
     await client.connect()
   }
-  
+
   return client
 }
 
@@ -62,18 +62,21 @@ export function addBrowserTools(server: McpServer) {
         try {
           pageInfo = await Promise.race([
             client.getPageInfo(),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Page info timeout')), 1000)
-            )
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Page info timeout')), 1000),
+            ),
           ])
-        } catch (err) {
+        }
+        catch (err) {
           logger.warn('Could not get page info:', err)
         }
-        
+
         const response: any = { success: true }
-        if (result !== undefined) response.result = result
-        if (pageInfo) response.pageInfo = pageInfo
-        
+        if (result !== undefined)
+          response.result = result
+        if (pageInfo)
+          response.pageInfo = pageInfo
+
         return {
           content: [{
             type: 'text',
@@ -173,11 +176,12 @@ export function addBrowserTools(server: McpServer) {
         try {
           pageInfo = await Promise.race([
             client.getPageInfo(),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Page info timeout')), 2000)
-            )
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Page info timeout')), 2000),
+            ),
           ])
-        } catch (err) {
+        }
+        catch (err) {
           logger.warn('Could not get page info after navigation:', err)
           pageInfo = { url, title: 'Unknown', readyState: 'unknown' }
         }

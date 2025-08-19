@@ -434,13 +434,13 @@ export async function addLspTools(server: McpServer) {
   server.registerTool(
     'get_instructions',
     {
-      title: 'Get Usage Instructions',
+      title: 'Get AI Instructions',
       description: 'Get comprehensive instructions for ALL Token Saver MCP tools (both LSP and CDP). Returns a complete guide with tool descriptions, decision trees, examples, and workflows for both code navigation and browser control.',
       inputSchema: {},
     },
     async () => {
       const { workspace, Uri, extensions } = await import('vscode')
-      
+
       // Get the Token Saver MCP extension
       const extension = extensions.getExtension('jerry426.token-saver-mcp')
       if (!extension) {
@@ -452,16 +452,16 @@ export async function addLspTools(server: McpServer) {
         }
       }
 
-      // Try to read INSTRUCTIONS_COMBINED.md from extension directory
+      // Read README_USAGE_GUIDE.md from root directory
       const extensionPath = Uri.file(extension.extensionPath)
-      const combinedPath = Uri.joinPath(extensionPath, 'AI-instructions', 'INSTRUCTIONS_COMBINED.md')
-      
+      const instructionsPath = Uri.joinPath(extensionPath, 'README_USAGE_GUIDE.md')
+
       try {
-        const fileContent = await workspace.fs.readFile(combinedPath)
+        const fileContent = await workspace.fs.readFile(instructionsPath)
         const instructions = new TextDecoder().decode(fileContent)
-        
-        logger.info('Returned combined instructions from AI-instructions/INSTRUCTIONS_COMBINED.md')
-        
+
+        logger.info('Returned usage guide from README_USAGE_GUIDE.md')
+
         return {
           content: [{
             type: 'text',
@@ -469,31 +469,17 @@ export async function addLspTools(server: McpServer) {
           }],
         }
       }
-      catch (combinedError) {
-        // Fallback to AI-MCP-USER.md for backwards compatibility
-        const userPath = Uri.joinPath(extensionPath, 'AI-instructions', 'AI-MCP-USER.md')
-        
-        try {
-          const fileContent = await workspace.fs.readFile(userPath)
-          const instructions = new TextDecoder().decode(fileContent)
-          
-          logger.info('Returned usage instructions from AI-MCP-USER.md (fallback)')
-          
-          return {
-            content: [{
-              type: 'text',
-              text: instructions,
-            }],
-          }
-        }
-        catch (userError) {
-          logger.error('Failed to read instructions files', { combinedError, userError })
-          return {
-            content: [{
-              type: 'text',
-              text: `Error: Could not read instructions. Please ensure INSTRUCTIONS_COMBINED.md or AI-MCP-USER.md exists in the AI-instructions directory.`,
-            }],
-          }
+      catch (error) {
+        logger.error('Failed to read README_USAGE_GUIDE.md', error)
+
+        return {
+          content: [{
+            type: 'text',
+            text: `Error: Could not read README_USAGE_GUIDE.md from extension directory.
+Please ensure Token Saver MCP is properly installed.
+
+For documentation, visit: https://github.com/jerry426/token-saver-mcp`,
+          }],
         }
       }
     },
@@ -502,8 +488,4 @@ export async function addLspTools(server: McpServer) {
   // Add browser tools
   const { addBrowserTools } = await import('./browser-tools')
   addBrowserTools(server)
-  
-  // Add browser helper tools
-  const { addBrowserHelpers } = await import('./browser-helpers')
-  addBrowserHelpers(server)
 }

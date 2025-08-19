@@ -15,3 +15,6 @@ src/generated
 .lsp_mcp_port
 .lsp_mcp_workspace_id
 .lsp_mcp_status.json
+
+# Chrome CDP temporary data
+temp-chrome-data/

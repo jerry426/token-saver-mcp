@@ -8,22 +8,22 @@ import { logger } from '../utils'
  */
 async function ensureCDPConnection(): Promise<ReturnType<typeof getCDPClient>> {
   let client = getCDPClient()
-  
+
   // Check if connection is healthy
   const isHealthy = await client.isHealthy()
-  
+
   if (!isHealthy) {
     logger.info('CDP connection unhealthy, resetting client...')
     resetCDPClient()
     client = getCDPClient()
   }
-  
+
   // Connect if not active
   if (!client.isActive()) {
     logger.info('Connecting to Chrome via CDP...')
     await client.connect()
   }
-  
+
   return client
 }
 
@@ -35,22 +35,22 @@ async function ensureCDPConnection(): Promise<ReturnType<typeof getCDPClient>> {
 export function addBrowserHelpers(server: McpServer) {
   /**
    * TEST_REACT_COMPONENT
-   * 
+   *
    * Purpose: Test a React component's rendering and state
-   * 
+   *
    * What it does:
    * 1. Navigates to the component's URL
    * 2. Verifies component mounted
    * 3. Checks React DevTools if available
    * 4. Returns component props and state
-   * 
+   *
    * Example:
    * test_react_component({ url: "http://localhost:3000/dashboard", componentName: "Dashboard" })
-   * 
+   *
    * Returns:
    * - mounted: boolean
    * - props: object
-   * - state: object  
+   * - state: object
    * - errors: any console errors
    */
   server.registerTool(
@@ -67,16 +67,16 @@ export function addBrowserHelpers(server: McpServer) {
     async ({ url, componentName, waitForSelector }) => {
       try {
         const client = await ensureCDPConnection()
-        
+
         await client.navigate(url)
-        
+
         if (waitForSelector) {
           await client.waitForSelector(waitForSelector)
         }
-        
+
         // Wait for React to mount
         await new Promise(resolve => setTimeout(resolve, 1000))
-        
+
         const result = await client.execute(`
           (() => {
             // Check if React DevTools is available
@@ -110,10 +110,10 @@ export function addBrowserHelpers(server: McpServer) {
             };
           })()
         `)
-        
+
         // Also capture any console errors
         const consoleMessages = client.getConsoleMessages('error')
-        
+
         return {
           content: [{
             type: 'text',
@@ -125,7 +125,8 @@ export function addBrowserHelpers(server: McpServer) {
             }, null, 2),
           }],
         }
-      } catch (error: any) {
+      }
+      catch (error: any) {
         logger.error('Failed to test React component:', error)
         return {
           content: [{
@@ -142,22 +143,22 @@ export function addBrowserHelpers(server: McpServer) {
 
   /**
    * TEST_API_ENDPOINT
-   * 
+   *
    * Purpose: Test an API endpoint directly from the browser
-   * 
+   *
    * What it does:
    * 1. Navigates to the application
    * 2. Makes a fetch request to the endpoint
    * 3. Captures response status, headers, and body
    * 4. Checks for CORS issues
-   * 
+   *
    * Example:
-   * test_api_endpoint({ 
+   * test_api_endpoint({
    *   url: "http://localhost:3000",
    *   endpoint: "/api/users",
    *   method: "GET"
    * })
-   * 
+   *
    * Returns:
    * - status: HTTP status code
    * - data: Response body
@@ -181,10 +182,10 @@ export function addBrowserHelpers(server: McpServer) {
     async ({ url, endpoint, method = 'GET', body, headers }) => {
       try {
         const client = await ensureCDPConnection()
-        
+
         await client.navigate(url)
         await new Promise(resolve => setTimeout(resolve, 500))
-        
+
         const result = await client.execute(`
           (async () => {
             const startTime = performance.now();
@@ -240,7 +241,7 @@ export function addBrowserHelpers(server: McpServer) {
             }
           })()
         `)
-        
+
         return {
           content: [{
             type: 'text',
@@ -252,7 +253,8 @@ export function addBrowserHelpers(server: McpServer) {
             }, null, 2),
           }],
         }
-      } catch (error: any) {
+      }
+      catch (error: any) {
         logger.error('Failed to test API endpoint:', error)
         return {
           content: [{
@@ -269,22 +271,22 @@ export function addBrowserHelpers(server: McpServer) {
 
   /**
    * TEST_FORM_VALIDATION
-   * 
+   *
    * Purpose: Test form validation and submission
-   * 
+   *
    * What it does:
    * 1. Fills form fields with provided data
    * 2. Submits the form
    * 3. Captures validation errors
    * 4. Checks success/failure states
-   * 
+   *
    * Example:
    * test_form_validation({
    *   url: "http://localhost:3000/signup",
    *   formSelector: "#signup-form",
    *   fields: { email: "invalid", password: "123" }
    * })
-   * 
+   *
    * Returns:
    * - submitted: Whether form was submitted
    * - validationErrors: Field-level errors
@@ -306,22 +308,22 @@ export function addBrowserHelpers(server: McpServer) {
     async ({ url, formSelector, fields, submitButtonSelector }) => {
       try {
         const client = await ensureCDPConnection()
-        
+
         await client.navigate(url)
         await client.waitForSelector(formSelector)
-        
+
         // Fill form fields
         for (const [field, value] of Object.entries(fields)) {
           const selector = `${formSelector} [name="${field}"], ${formSelector} #${field}`
           await client.type(selector, value)
         }
-        
+
         // Clear previous console messages
         client.clearConsoleMessages()
-        
+
         // Submit form
         const submitSelector = submitButtonSelector || `${formSelector} button[type="submit"], ${formSelector} input[type="submit"]`
-        
+
         const result = await client.execute(`
           (() => {
             const form = document.querySelector('${formSelector}');
@@ -369,10 +371,10 @@ export function addBrowserHelpers(server: McpServer) {
             };
           })()
         `)
-        
+
         // Wait for form processing
         await new Promise(resolve => setTimeout(resolve, 1500))
-        
+
         // Check post-submit state
         const postSubmitResult = await client.execute(`
           (() => {
@@ -415,10 +417,10 @@ export function addBrowserHelpers(server: McpServer) {
             };
           })()
         `)
-        
+
         // Get console errors
         const consoleErrors = client.getConsoleMessages('error')
-        
+
         return {
           content: [{
             type: 'text',
@@ -446,7 +448,8 @@ export function addBrowserHelpers(server: McpServer) {
             }, null, 2),
           }],
         }
-      } catch (error: any) {
+      }
+      catch (error: any) {
         logger.error('Failed to test form validation:', error)
         return {
           content: [{
@@ -463,18 +466,18 @@ export function addBrowserHelpers(server: McpServer) {
 
   /**
    * CHECK_PAGE_PERFORMANCE
-   * 
+   *
    * Purpose: Analyze page load performance
-   * 
+   *
    * What it does:
    * 1. Navigates to URL
    * 2. Measures key performance metrics
    * 3. Analyzes resource loading
    * 4. Checks for performance issues
-   * 
+   *
    * Example:
    * check_page_performance({ url: "http://localhost:3000" })
-   * 
+   *
    * Returns:
    * - loadTime: Total page load time
    * - domContentLoaded: DOM ready time
@@ -495,13 +498,13 @@ export function addBrowserHelpers(server: McpServer) {
     async ({ url, waitTime = 3000 }) => {
       try {
         const client = await ensureCDPConnection()
-        
+
         // Clear any existing marks
         await client.execute('performance.clearMarks(); performance.clearMeasures();')
-        
+
         await client.navigate(url)
         await new Promise(resolve => setTimeout(resolve, waitTime))
-        
+
         const metrics = await client.execute(`
           (() => {
             const perf = performance.getEntriesByType('navigation')[0];
@@ -578,30 +581,30 @@ export function addBrowserHelpers(server: McpServer) {
             };
           })()
         `)
-        
+
         // Generate recommendations
         const recommendations = []
-        
+
         if (metrics.timing.loadComplete > 3000) {
           recommendations.push('Page load time exceeds 3 seconds - consider optimization')
         }
-        
+
         if (metrics.resources.byType?.js?.count > 20) {
           recommendations.push('Too many JavaScript files - consider bundling')
         }
-        
+
         if (metrics.resources.byType?.image?.size > 1000000) {
           recommendations.push('Large image payload - optimize images')
         }
-        
+
         if (metrics.documentStats.nodes > 3000) {
           recommendations.push('Large DOM size - consider virtualization')
         }
-        
+
         if (metrics.memory && metrics.memory.usedJSHeapSize > 50) {
           recommendations.push('High memory usage - check for memory leaks')
         }
-        
+
         return {
           content: [{
             type: 'text',
@@ -614,14 +617,17 @@ export function addBrowserHelpers(server: McpServer) {
                 loadTime: `${Math.round(metrics.timing.loadComplete)}ms`,
                 resourceCount: metrics.resources.total,
                 domNodes: metrics.documentStats.nodes,
-                grade: metrics.timing.loadComplete < 1000 ? 'A' :
-                       metrics.timing.loadComplete < 2000 ? 'B' :
-                       metrics.timing.loadComplete < 3000 ? 'C' : 'D',
+                grade: metrics.timing.loadComplete < 1000
+                  ? 'A'
+                  : metrics.timing.loadComplete < 2000
+                    ? 'B'
+                    : metrics.timing.loadComplete < 3000 ? 'C' : 'D',
               },
             }, null, 2),
           }],
         }
-      } catch (error: any) {
+      }
+      catch (error: any) {
         logger.error('Failed to check page performance:', error)
         return {
           content: [{
@@ -638,22 +644,22 @@ export function addBrowserHelpers(server: McpServer) {
 
   /**
    * DEBUG_JAVASCRIPT_ERROR
-   * 
+   *
    * Purpose: Debug a JavaScript error on a page
-   * 
+   *
    * What it does:
    * 1. Navigates to the error page
    * 2. Captures all errors
    * 3. Gets stack traces
    * 4. Identifies error source
    * 5. Suggests fixes
-   * 
+   *
    * Example:
-   * debug_javascript_error({ 
+   * debug_javascript_error({
    *   url: "http://localhost:3000/broken",
    *   triggerAction: "document.getElementById('button').click()"
    * })
-   * 
+   *
    * Returns:
    * - errors: Array of errors with stack traces
    * - sourceCode: Relevant code around error
@@ -673,7 +679,7 @@ export function addBrowserHelpers(server: McpServer) {
     async ({ url, triggerAction, waitBeforeTrigger = 1000 }) => {
       try {
         const client = await ensureCDPConnection()
-        
+
         // Set up error capture before navigation
         await client.execute(`
           window.__capturedErrors = [];
@@ -702,30 +708,31 @@ export function addBrowserHelpers(server: McpServer) {
             });
           });
         `)
-        
+
         await client.navigate(url)
         await new Promise(resolve => setTimeout(resolve, waitBeforeTrigger))
-        
+
         // Clear console to capture fresh errors
         client.clearConsoleMessages()
-        
+
         // Trigger the error if action provided
         if (triggerAction) {
           try {
             await client.execute(triggerAction)
-          } catch (triggerError: any) {
+          }
+          catch (triggerError: any) {
             // This is expected - we're triggering an error
             logger.info('Trigger resulted in error (expected):', triggerError.message)
           }
         }
-        
+
         // Wait for errors to be captured
         await new Promise(resolve => setTimeout(resolve, 500))
-        
+
         // Collect all errors
         const capturedErrors = await client.execute('window.__capturedErrors || []')
         const consoleErrors = client.getConsoleMessages('error')
-        
+
         // Analyze errors
         const analysis = await client.execute(`
           (() => {
@@ -789,7 +796,7 @@ export function addBrowserHelpers(server: McpServer) {
             };
           })()
         `)
-        
+
         return {
           content: [{
             type: 'text',
@@ -817,7 +824,8 @@ export function addBrowserHelpers(server: McpServer) {
             }, null, 2),
           }],
         }
-      } catch (error: any) {
+      }
+      catch (error: any) {
         logger.error('Failed to debug JavaScript error:', error)
         return {
           content: [{

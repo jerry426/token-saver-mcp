@@ -5,8 +5,9 @@ import express from 'express'
 import { Uri, window, workspace } from 'vscode'
 import { logger } from '../utils'
 import { cleanupBuffers } from './buffer-manager'
-import { addLspTools } from './tools'
 import { registerSimpleRestEndpoints } from './simple-rest'
+// Import new modular tool registry
+import { registerAllTools } from './tools/index'
 
 // Map to store transports by session ID with metadata
 interface SessionInfo {
@@ -51,41 +52,41 @@ let currentPort: number = 0
 // Token savings estimates (based on typical text search alternatives)
 const TOKEN_SAVINGS_ESTIMATES: Record<string, number> = {
   // LSP tools save tokens by avoiding text searches
-  'get_hover': 500,          // Avoids reading entire file to understand types
-  'get_definition': 2000,    // Avoids searching entire codebase for definition
-  'get_references': 5000,    // Avoids grep through entire codebase
-  'get_implementations': 4000, // Avoids complex searches for implementations
-  'get_completions': 1000,   // Avoids listing all possible completions manually
-  'get_document_symbols': 3000, // Avoids parsing entire file structure
-  'get_call_hierarchy': 6000, // Avoids tracing through multiple files
-  'rename_symbol': 8000,     // Avoids finding and editing all occurrences
-  'get_code_actions': 1500,  // Avoids analyzing code for fixes
-  'get_diagnostics': 2000,   // Avoids reading error outputs
-  'get_semantic_tokens': 1500, // Avoids parsing syntax manually
-  'get_type_definition': 2000, // Avoids searching for type definitions
-  'find_implementations': 4000, // Avoids searching for all implementations
-  'search_text': 100,        // Still saves some tokens with better formatting
-  
+  get_hover: 500, // Avoids reading entire file to understand types
+  get_definition: 2000, // Avoids searching entire codebase for definition
+  get_references: 5000, // Avoids grep through entire codebase
+  get_implementations: 4000, // Avoids complex searches for implementations
+  get_completions: 1000, // Avoids listing all possible completions manually
+  get_document_symbols: 3000, // Avoids parsing entire file structure
+  get_call_hierarchy: 6000, // Avoids tracing through multiple files
+  rename_symbol: 8000, // Avoids finding and editing all occurrences
+  get_code_actions: 1500, // Avoids analyzing code for fixes
+  get_diagnostics: 2000, // Avoids reading error outputs
+  get_semantic_tokens: 1500, // Avoids parsing syntax manually
+  get_type_definition: 2000, // Avoids searching for type definitions
+  find_implementations: 4000, // Avoids searching for all implementations
+  search_text: 100, // Still saves some tokens with better formatting
+
   // Browser tools save tokens by avoiding complex DOM manipulation scripts
-  'execute_in_browser': 500,
-  'navigate_browser': 200,
-  'click_element': 300,
-  'type_in_browser': 300,
-  'get_dom_snapshot': 2000,
-  'take_screenshot': 100,
-  'wait_for_element': 200,
-  'get_browser_console': 1000,
-  'test_react_component': 3000,
-  'test_api_endpoint': 1500,
-  'test_form_validation': 2000,
-  'check_page_performance': 2500,
-  'debug_javascript_error': 3000,
-  
+  execute_in_browser: 500,
+  navigate_browser: 200,
+  click_element: 300,
+  type_in_browser: 300,
+  get_dom_snapshot: 2000,
+  take_screenshot: 100,
+  wait_for_element: 200,
+  get_browser_console: 1000,
+  test_react_component: 3000,
+  test_api_endpoint: 1500,
+  test_form_validation: 2000,
+  check_page_performance: 2500,
+  debug_javascript_error: 3000,
+
   // System tools
-  'retrieve_buffer': 100,
-  'get_buffer_stats': 50,
-  'get_instructions': 50,
-  'get_supported_languages': 100
+  retrieve_buffer: 100,
+  get_buffer_stats: 50,
+  get_instructions: 50,
+  get_supported_languages: 100,
 }
 
 // Metrics tracking
@@ -95,8 +96,8 @@ interface RequestMetrics {
   errorCount: number
   responseTimeHistory: number[]
   toolUsage: Map<string, number>
-  tokenSavings: Map<string, number>  // Track token savings per tool
-  totalTokensSaved: number            // Total tokens saved
+  tokenSavings: Map<string, number> // Track token savings per tool
+  totalTokensSaved: number // Total tokens saved
   recentActivity: Array<{
     timestamp: number
     method: string
@@ -115,7 +116,7 @@ const metrics: RequestMetrics = {
   toolUsage: new Map(),
   tokenSavings: new Map(),
   totalTokensSaved: 0,
-  recentActivity: []
+  recentActivity: [],
 }
 
 // Track server start time
@@ -127,10 +128,11 @@ const dashboardClients = new Set<express.Response>()
 // Broadcast metrics update to all dashboard clients
 function broadcastMetrics() {
   const metricsData = getMetricsData()
-  dashboardClients.forEach(client => {
+  dashboardClients.forEach((client) => {
     try {
       client.write(`data: ${JSON.stringify(metricsData)}\n\n`)
-    } catch (error) {
+    }
+    catch (error) {
       // Client disconnected, remove from set
       dashboardClients.delete(client)
     }
@@ -139,26 +141,26 @@ function broadcastMetrics() {
 
 // Get formatted metrics data
 function getMetricsData() {
-  const successRate = metrics.totalRequests > 0 
-    ? metrics.successCount / metrics.totalRequests 
+  const successRate = metrics.totalRequests > 0
+    ? metrics.successCount / metrics.totalRequests
     : 1
-  
+
   const avgResponseTime = metrics.responseTimeHistory.length > 0
     ? metrics.responseTimeHistory.reduce((a, b) => a + b, 0) / metrics.responseTimeHistory.length
     : 0
-  
+
   // Get top 5 most used tools
   const popularTools = Array.from(metrics.toolUsage.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([name, count]) => ({ name, count }))
-  
+
   // Get top 5 token-saving tools
   const topTokenSavers = Array.from(metrics.tokenSavings.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([name, saved]) => ({ name, saved }))
-  
+
   return {
     totalRequests: metrics.totalRequests,
     successRate,
@@ -171,7 +173,7 @@ function getMetricsData() {
     totalTokensSaved: metrics.totalTokensSaved,
     tokenSavingsByTool: Object.fromEntries(metrics.tokenSavings),
     responseTimeHistory: metrics.responseTimeHistory.slice(-50),
-    uptime: Date.now() - serverStartTime
+    uptime: Date.now() - serverStartTime,
   }
 }
 
@@ -904,10 +906,11 @@ function trackRequest(method: string, tool?: string, success: boolean = true, re
   metrics.totalRequests++
   if (success) {
     metrics.successCount++
-  } else {
+  }
+  else {
     metrics.errorCount++
   }
-  
+
   if (responseTime !== undefined) {
     metrics.responseTimeHistory.push(responseTime)
     // Keep only last 100 response times
@@ -915,11 +918,11 @@ function trackRequest(method: string, tool?: string, success: boolean = true, re
       metrics.responseTimeHistory.shift()
     }
   }
-  
+
   let tokensSaved = 0
   if (tool) {
     metrics.toolUsage.set(tool, (metrics.toolUsage.get(tool) || 0) + 1)
-    
+
     // Calculate and track token savings
     tokensSaved = TOKEN_SAVINGS_ESTIMATES[tool] || 0
     if (tokensSaved > 0) {
@@ -928,21 +931,21 @@ function trackRequest(method: string, tool?: string, success: boolean = true, re
       metrics.totalTokensSaved += tokensSaved
     }
   }
-  
+
   metrics.recentActivity.push({
     timestamp: Date.now(),
     method,
     tool,
     status: success ? 'success' : 'error',
     responseTime,
-    tokensSaved
+    tokensSaved,
   })
-  
+
   // Keep only last 50 activities
   if (metrics.recentActivity.length > 50) {
     metrics.recentActivity.shift()
   }
-  
+
   // Broadcast update to dashboard clients
   broadcastMetrics()
 }
@@ -1019,77 +1022,97 @@ export async function startMcp() {
     res.setHeader('Content-Type', 'text/html')
     res.send(getDashboardHTML())
   })
-  
+
   // Metrics endpoint
   app.get('/metrics', (_req, res) => {
     res.json(getMetricsData())
   })
-  
+
   // Available tools endpoint
   app.get('/available-tools', async (_req, res) => {
     const lspTools = [
-      'get_hover', 'get_completions', 'get_definition', 'get_type_definition',
-      'get_references', 'find_implementations', 'get_document_symbols',
-      'get_call_hierarchy', 'rename_symbol', 'get_code_actions',
-      'get_diagnostics', 'get_semantic_tokens', 'search_text'
+      'get_hover',
+      'get_completions',
+      'get_definition',
+      'get_type_definition',
+      'get_references',
+      'find_implementations',
+      'get_document_symbols',
+      'get_call_hierarchy',
+      'rename_symbol',
+      'get_code_actions',
+      'get_diagnostics',
+      'get_semantic_tokens',
+      'search_text',
     ]
-    
+
     const cdpTools = [
-      'execute_in_browser', 'get_browser_console', 'navigate_browser',
-      'get_dom_snapshot', 'click_element', 'type_in_browser',
-      'take_screenshot', 'wait_for_element', 'test_react_component',
-      'test_api_endpoint', 'test_form_validation', 'check_page_performance',
-      'debug_javascript_error'
+      'execute_in_browser',
+      'get_browser_console',
+      'navigate_browser',
+      'get_dom_snapshot',
+      'click_element',
+      'type_in_browser',
+      'take_screenshot',
+      'wait_for_element',
+      'test_react_component',
+      'test_api_endpoint',
+      'test_form_validation',
+      'check_page_performance',
+      'debug_javascript_error',
     ]
-    
+
     const systemTools = [
-      'retrieve_buffer', 'get_buffer_stats', 'get_instructions', 'get_supported_languages'
+      'retrieve_buffer',
+      'get_buffer_stats',
+      'get_instructions',
+      'get_supported_languages',
     ]
-    
+
     // Include call counts and token savings from metrics
     const tools = [
-      ...lspTools.map(name => ({ 
-        name, 
+      ...lspTools.map(name => ({
+        name,
         category: 'lsp',
         callCount: metrics.toolUsage.get(name) || 0,
         tokensSaved: metrics.tokenSavings.get(name) || 0,
-        estimatedSavingsPerCall: TOKEN_SAVINGS_ESTIMATES[name] || 0
+        estimatedSavingsPerCall: TOKEN_SAVINGS_ESTIMATES[name] || 0,
       })),
-      ...cdpTools.map(name => ({ 
-        name, 
+      ...cdpTools.map(name => ({
+        name,
         category: 'cdp',
         callCount: metrics.toolUsage.get(name) || 0,
         tokensSaved: metrics.tokenSavings.get(name) || 0,
-        estimatedSavingsPerCall: TOKEN_SAVINGS_ESTIMATES[name] || 0
+        estimatedSavingsPerCall: TOKEN_SAVINGS_ESTIMATES[name] || 0,
       })),
-      ...systemTools.map(name => ({ 
-        name, 
+      ...systemTools.map(name => ({
+        name,
         category: 'system',
         callCount: metrics.toolUsage.get(name) || 0,
         tokensSaved: metrics.tokenSavings.get(name) || 0,
-        estimatedSavingsPerCall: TOKEN_SAVINGS_ESTIMATES[name] || 0
-      }))
+        estimatedSavingsPerCall: TOKEN_SAVINGS_ESTIMATES[name] || 0,
+      })),
     ]
-    
-    res.json({ 
+
+    res.json({
       tools,
-      totalTokensSaved: metrics.totalTokensSaved
+      totalTokensSaved: metrics.totalTokensSaved,
     })
   })
-  
+
   // SSE endpoint for real-time dashboard updates
   app.get('/dashboard-events', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream')
     res.setHeader('Cache-Control', 'no-cache')
     res.setHeader('Connection', 'keep-alive')
     res.setHeader('Access-Control-Allow-Origin', '*')
-    
+
     // Add client to the set
     dashboardClients.add(res)
-    
+
     // Send initial data
     res.write(`data: ${JSON.stringify(getMetricsData())}\n\n`)
-    
+
     // Clean up on disconnect
     req.on('close', () => {
       dashboardClients.delete(res)
@@ -1127,13 +1150,13 @@ export async function startMcp() {
   // Handle POST requests for client-to-server communication
   app.post('/mcp', async (req, res) => {
     const startTime = Date.now()
-    
+
     // Extract tool name if this is a tools/call request
     let toolName: string | undefined
     if (req.body?.method === 'tools/call' && req.body?.params?.name) {
       toolName = req.body.params.name
     }
-    
+
     // Check for existing session ID (optional, for backwards compatibility)
     const sessionId = req.headers['mcp-session-id'] as string | undefined
     let transport: StreamableHTTPServerTransport
@@ -1172,8 +1195,8 @@ export async function startMcp() {
           version: '0.0.2',
         })
 
-        // Add LSP tools to the server
-        await addLspTools(singletonServer)
+        // Register all tools from modular structure
+        await registerAllTools(singletonServer)
 
         // Connect to the MCP server
         await singletonServer.connect(singletonTransport)
@@ -1257,15 +1280,16 @@ export async function startMcp() {
     // Handle the request
     try {
       await transport.handleRequest(req, res, req.body)
-      
+
       // Track successful request
       const responseTime = Date.now() - startTime
       trackRequest(req.body?.method || 'unknown', toolName, true, responseTime)
-    } catch (error) {
+    }
+    catch (error) {
       // Track failed request
       const responseTime = Date.now() - startTime
       trackRequest(req.body?.method || 'unknown', toolName, false, responseTime)
-      
+
       // Re-throw to maintain original error handling
       throw error
     }
