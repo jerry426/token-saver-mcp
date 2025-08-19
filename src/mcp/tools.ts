@@ -470,14 +470,14 @@ export async function addLspTools(server: McpServer) {
         }
       }
       catch (combinedError) {
-        // Fallback to CLAUDE-MCP-USER.md for backwards compatibility
-        const userPath = Uri.joinPath(extensionPath, 'AI-instructions', 'CLAUDE-MCP-USER.md')
+        // Fallback to AI-MCP-USER.md for backwards compatibility
+        const userPath = Uri.joinPath(extensionPath, 'AI-instructions', 'AI-MCP-USER.md')
         
         try {
           const fileContent = await workspace.fs.readFile(userPath)
           const instructions = new TextDecoder().decode(fileContent)
           
-          logger.info('Returned usage instructions from CLAUDE-MCP-USER.md (fallback)')
+          logger.info('Returned usage instructions from AI-MCP-USER.md (fallback)')
           
           return {
             content: [{
@@ -491,7 +491,7 @@ export async function addLspTools(server: McpServer) {
           return {
             content: [{
               type: 'text',
-              text: `Error: Could not read instructions. Please ensure INSTRUCTIONS_COMBINED.md or CLAUDE-MCP-USER.md exists in the AI-instructions directory.`,
+              text: `Error: Could not read instructions. Please ensure INSTRUCTIONS_COMBINED.md or AI-MCP-USER.md exists in the AI-instructions directory.`,
             }],
           }
         }

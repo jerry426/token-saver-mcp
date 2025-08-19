@@ -16,6 +16,7 @@ import { getTypeDefinition } from '../lsp/type-definition'
 import { bufferResponse, retrieveBuffer, getBufferStats } from './buffer-manager'
 import { getSupportedLanguages } from '../lsp/supported-languages'
 import { addBrowserTools } from './browser-tools'
+import { addBrowserHelpers } from './browser-helpers'
 
 // Token savings estimates (same as in tools.ts)
 const TOKEN_SAVINGS_ESTIMATES: Record<string, number> = {
@@ -97,7 +98,8 @@ const toolRegistry: Record<string, (args: any) => Promise<any>> = {
     return bufferResponse('get_semantic_tokens', result)
   },
   'search_text': async (args) => {
-    const result = await searchText(args)
+    const { query, ...options } = args
+    const result = await searchText(query, options)
     return bufferResponse('search_text', result)
   },
   // System tools
@@ -183,6 +185,174 @@ curl -X POST http://127.0.0.1:9527/mcp/simple \\
   }'`
 }
 
+// Helper function to create self-describing responses
+function createSelfDescribingResponse(toolName: string, result: any): any {
+  // Determine result type and create human-readable summary
+  let resultType = 'unknown'
+  let resultCount = 0
+  let humanReadable = ''
+  
+  // Handle different tool response patterns
+  if (Array.isArray(result)) {
+    resultType = 'array'
+    resultCount = result.length
+    
+    // Tool-specific summaries
+    switch (toolName) {
+      case 'get_definition':
+      case 'get_type_definition':
+        resultType = 'locations'
+        humanReadable = resultCount === 0 
+          ? 'No definitions found'
+          : resultCount === 1
+            ? `Definition found at line ${result[0].range?.start?.line + 1} in ${result[0].uri?.split('/').pop()}`
+            : `Found ${resultCount} definitions`
+        break
+      
+      case 'get_references':
+        resultType = 'locations'
+        humanReadable = resultCount === 0
+          ? 'No references found'
+          : `Found ${resultCount} reference${resultCount !== 1 ? 's' : ''}`
+        break
+      
+      case 'find_implementations':
+        resultType = 'locations'
+        humanReadable = resultCount === 0
+          ? 'No implementations found'
+          : `Found ${resultCount} implementation${resultCount !== 1 ? 's' : ''}`
+        break
+      
+      case 'get_hover':
+        resultType = 'hover'
+        humanReadable = result[0]?.contents?.[0]?.value 
+          ? 'Hover information available'
+          : 'No hover information'
+        break
+      
+      case 'get_completions':
+        resultType = 'completions'
+        humanReadable = `Found ${resultCount} completion suggestion${resultCount !== 1 ? 's' : ''}`
+        break
+      
+      case 'get_document_symbols':
+        resultType = 'symbols'
+        humanReadable = `Found ${resultCount} symbol${resultCount !== 1 ? 's' : ''} in document`
+        break
+      
+      case 'get_code_actions':
+        resultType = 'codeActions'
+        humanReadable = resultCount === 0
+          ? 'No code actions available'
+          : `Found ${resultCount} code action${resultCount !== 1 ? 's' : ''}`
+        break
+      
+      case 'get_diagnostics':
+        resultType = 'diagnostics'
+        humanReadable = resultCount === 0
+          ? 'No diagnostics found'
+          : `Found ${resultCount} diagnostic${resultCount !== 1 ? 's' : ''}`
+        break
+      
+      case 'search_text':
+        resultType = 'searchResults'
+        humanReadable = resultCount === 0
+          ? 'No matches found'
+          : `Found matches in ${resultCount} file${resultCount !== 1 ? 's' : ''}`
+        break
+      
+      case 'get_call_hierarchy':
+        resultType = 'callHierarchy'
+        humanReadable = `Found ${resultCount} call${resultCount !== 1 ? 's' : ''}`
+        break
+      
+      // Browser tools
+      case 'get_browser_console':
+        resultType = 'consoleMessages'
+        humanReadable = resultCount === 0
+          ? 'No console messages'
+          : `Found ${resultCount} console message${resultCount !== 1 ? 's' : ''}`
+        break
+      
+      default:
+        humanReadable = `Returned ${resultCount} item${resultCount !== 1 ? 's' : ''}`
+    }
+  } else if (result && typeof result === 'object') {
+    // Handle object responses
+    if (result.bufferId) {
+      resultType = 'buffered'
+      resultCount = 1
+      humanReadable = `Response buffered (ID: ${result.bufferId}). Use retrieve_buffer to get full data.`
+    } else if (result.edit || result.documentChanges) {
+      resultType = 'workspaceEdit'
+      const editCount = result.edit?.changes ? Object.keys(result.edit.changes).length : 0
+      resultCount = editCount
+      humanReadable = editCount === 0
+        ? 'No edits required'
+        : `Would modify ${editCount} file${editCount !== 1 ? 's' : ''}`
+    } else if (toolName === 'get_buffer_stats') {
+      resultType = 'stats'
+      resultCount = 1
+      humanReadable = `${result.activeBuffers || 0} active buffer${result.activeBuffers !== 1 ? 's' : ''}, ${result.totalSize || 0} bytes total`
+    } else if (toolName === 'get_supported_languages') {
+      resultType = 'languages'
+      resultCount = result.totalCount || 0
+      humanReadable = `${resultCount} language${resultCount !== 1 ? 's' : ''} supported`
+    } else if (toolName === 'get_semantic_tokens') {
+      resultType = 'semanticTokens'
+      resultCount = result.data?.length || 0
+      humanReadable = `${resultCount} semantic token${resultCount !== 1 ? 's' : ''} found`
+    } else if (toolName === 'get_dom_snapshot') {
+      resultType = 'domSnapshot'
+      resultCount = 1
+      humanReadable = `DOM snapshot captured (${result.forms?.length || 0} forms, ${result.links?.length || 0} links, ${result.images?.length || 0} images)`
+    } else if (toolName === 'take_screenshot') {
+      resultType = 'screenshot'
+      resultCount = 1
+      humanReadable = 'Screenshot captured successfully'
+    } else if (toolName === 'execute_in_browser' || toolName === 'test_react_component' || toolName === 'test_api_endpoint') {
+      resultType = 'browserResult'
+      resultCount = 1
+      humanReadable = result.error ? `Operation failed: ${result.error}` : 'Operation completed successfully'
+    } else if (toolName === 'check_page_performance') {
+      resultType = 'performanceMetrics'
+      resultCount = 1
+      humanReadable = `Page loaded in ${result.loadTime || 'unknown'}ms`
+    } else {
+      resultType = 'object'
+      resultCount = 1
+      humanReadable = 'Operation completed successfully'
+    }
+  } else if (typeof result === 'string') {
+    resultType = 'string'
+    resultCount = 1
+    if (toolName === 'get_instructions') {
+      humanReadable = 'Instructions retrieved successfully'
+    } else {
+      humanReadable = result.length > 100 
+        ? `Returned text (${result.length} characters)`
+        : result
+    }
+  } else if (result === null || result === undefined) {
+    resultType = 'null'
+    resultCount = 0
+    humanReadable = 'No data returned'
+  } else {
+    resultType = typeof result
+    resultCount = 1
+    humanReadable = `Returned ${resultType} value`
+  }
+  
+  return {
+    tool: toolName,
+    success: true,
+    resultType,
+    resultCount,
+    data: result,
+    humanReadable
+  }
+}
+
 // Browser tools will be added dynamically
 let browserToolsInitialized = false
 
@@ -201,6 +371,10 @@ async function initBrowserTools() {
   
   // Add browser tools to our registry
   addBrowserTools(mockServer as any)
+  
+  // Add browser helper tools (high-level testing/debugging tools)
+  addBrowserHelpers(mockServer as any)
+  
   browserToolsInitialized = true
 }
 
@@ -315,11 +489,12 @@ export function registerSimpleRestEndpoints(app: Express, metrics: any) {
             metrics.recentActivity.shift()
           }
           
-          // Return success response
+          // Return success response with self-describing format
+          const selfDescribingResult = createSelfDescribingResponse(name, result)
           res.json({
             jsonrpc: '2.0',
             id: id || 1,
-            result
+            result: selfDescribingResult
           })
           
         } catch (error: any) {

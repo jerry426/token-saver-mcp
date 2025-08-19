@@ -9,7 +9,8 @@ AI-instructions/
 ├── README.md                           (this file - directory index)
 ├── INSTRUCTIONS_COMBINED.md            ⭐ Primary - Returned by get_instructions()
 ├── TOKEN_SAVER_OVERVIEW.md            Complete architectural overview
-├── CLAUDE-MCP-USER.md                 Detailed LSP tools guide
+├── AI-MCP-USER.md                     Detailed LSP tools guide (formerly CLAUDE-MCP-USER.md)
+├── CURL_USAGE_GUIDE.md                🆕 Guide for using REST endpoint with curl
 ├── BROWSER_HELPERS_DOCUMENTATION.md   Detailed CDP browser helpers guide
 ├── AI_BROWSER_USAGE_GUIDE.md          Browser automation strategies
 ├── CDP_BROWSER_INTEGRATION.md         Technical CDP implementation details
@@ -20,8 +21,9 @@ AI-instructions/
 
 ### For AI Assistants:
 - **Start with**: `INSTRUCTIONS_COMBINED.md` (or use `get_instructions()` tool)
-- **For code work details**: `CLAUDE-MCP-USER.md`
+- **For code work details**: `AI-MCP-USER.md`
 - **For browser work details**: `BROWSER_HELPERS_DOCUMENTATION.md`
+- **For curl/REST usage**: `CURL_USAGE_GUIDE.md` (if not using MCP streaming)
 
 ### For Developers:
 - **Architecture**: `TOKEN_SAVER_OVERVIEW.md`

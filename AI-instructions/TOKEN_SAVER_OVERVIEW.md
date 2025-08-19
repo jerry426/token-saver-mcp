@@ -92,13 +92,13 @@ Code Quality:
 Due to the comprehensive nature of Token Saver MCP, documentation is organized into focused guides:
 
 ### Core Documentation:
-1. **CLAUDE-MCP-USER.md** - LSP tools usage guide (primary)
+1. **AI-MCP-USER.md** - LSP tools usage guide (primary)
 2. **BROWSER_HELPERS_DOCUMENTATION.md** - CDP browser helpers guide
 3. **AI_BROWSER_USAGE_GUIDE.md** - Browser automation strategies
 4. **CDP_BROWSER_INTEGRATION.md** - Technical CDP details
 
 ### Quick Reference:
-- **For code navigation**: Start with CLAUDE-MCP-USER.md
+- **For code navigation**: Start with AI-MCP-USER.md
 - **For browser testing**: Start with BROWSER_HELPERS_DOCUMENTATION.md
 - **For debugging**: Use both LSP and CDP tools together
 
@@ -140,7 +140,7 @@ Due to the comprehensive nature of Token Saver MCP, documentation is organized i
 
 ### For AI Assistants:
 1. Read the appropriate documentation based on task:
-   - Code work → CLAUDE-MCP-USER.md
+   - Code work → AI-MCP-USER.md
    - Browser work → BROWSER_HELPERS_DOCUMENTATION.md
 2. Use `get_instructions` tool to access latest guide
 3. Combine LSP and CDP tools for full-stack tasks

@@ -24,7 +24,7 @@ TOKEN_SAVER_OVERVIEW.md
 ├── Why they're revolutionary together
 └── Common workflows
 
-CLAUDE-MCP-USER.md
+AI-MCP-USER.md
 ├── LSP tools detailed guide
 ├── Code navigation patterns
 └── Performance comparisons

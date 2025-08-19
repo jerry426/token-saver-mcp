@@ -1,6 +1,8 @@
-# Token Saver MCP Tools Usage Guide - LSP Tools
+# Token Saver MCP Tools Usage Guide for AI Assistants
 
-> **Note for Claude Code**: You can always retrieve the latest version of this guide using the `get_instructions` tool. This ensures you have the most up-to-date usage information.
+> **Note for AI Assistants**: You can always retrieve the latest version of this guide using the `get_instructions` tool. This ensures you have the most up-to-date usage information.
+> 
+> **For curl/REST usage**: If you're using the simple REST endpoint instead of MCP streaming, see [CURL_USAGE_GUIDE.md](CURL_USAGE_GUIDE.md) for specific instructions on request formatting and response handling.
 
 ## 📚 Token Saver MCP = Two Complementary Toolsets
 
@@ -274,7 +276,7 @@ RIGHT ✅:
 ### get_instructions
 - **Purpose**: Get comprehensive usage instructions for all Token Saver MCP tools
 - **Use when**: Need to understand how to use the tools, best practices, or workflows
-- **Returns**: Complete contents of this guide (CLAUDE-MCP-USER.md)
+- **Returns**: Complete contents of this guide (AI-MCP-USER.md)
 - **Parameters**: None required
 - **Note**: This is the single source of truth for tool usage
 

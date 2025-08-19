@@ -9,7 +9,7 @@ Token Saver MCP provides **30+ tools** in two categories:
 ## 📋 Available Documentation
 
 - **This file** - Essential reference for all tools
-- **CLAUDE-MCP-USER.md** - Detailed LSP tools guide
+- **AI-MCP-USER.md** - Detailed LSP tools guide
 - **BROWSER_HELPERS_DOCUMENTATION.md** - Detailed CDP tools guide
 - **TOKEN_SAVER_OVERVIEW.md** - Complete architectural overview
 

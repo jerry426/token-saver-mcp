@@ -5,41 +5,49 @@
 
 > **Transform AI from a code suggester into a true full-stack developer with complete control over both backend code and frontend browsers.**
 
-## 🆕 What's New in v1.0.2
+📝 [View Changelog](CHANGELOG.md)
 
-### 🎯 **Real-Time Developer Dashboard**
-Monitor your AI's performance live at `http://127.0.0.1:9527/dashboard`:
-- 📊 **Live metrics** - Watch tokens saved accumulate in real-time
-- ⚡ **Performance graphs** - See sub-millisecond response times
-- 💰 **Cost calculator** - Track money saved per session
-- 🛠️ **30+ tools visualization** - All tools with usage stats
+## The Core Message: Context Conservation
 
-### 🚀 **Edge Browser Integration** 
-Microsoft Edge now prioritized for **10x better performance**:
-- ⚡ **0.5ms average response time** (vs Chrome's sluggish performance)
-- 🔄 **Automatic WebSocket recovery** - No more VSCode restarts
-- 🌐 **13 CDP browser tools** for complete frontend control
-- 🧪 **Instant testing** - Verify code changes in real browsers
+Think of your AI's context window like a workbench. If it's cluttered with old notes, unused tools, and conversational fluff, the AI can't work effectively on the current task. **Token Saver MCP keeps the workbench clean**, ensuring only the most relevant information is present.
 
-### 📈 **Proven Performance**
-- **17,200+ tokens saved** in a typical session
-- **100-1000x faster** than text search (measured, not estimated)
-- **$0.05+ saved per session** in API costs
-- **100% success rate** with automatic error recovery
+This leads to a more focused, capable, and persistent AI assistant that can tackle complex, multi-step projects without losing its train of thought.
 
-This isn't just an incremental improvement - it's a **paradigm shift** in AI-assisted development.
+**VSCode's Language Server already knows everything about your code.** Token Saver MCP gives AI instant access to that knowledge—no searching, no waiting, no context waste.
 
-## The Hidden Cost You Don't See
+## Why "Token Saver"? It's About Focus, Not Just Cost
 
-Every time your AI assistant searches your code, it's:
-- 🔥 **Burning thousands of tokens** on grep/find commands
-- ⏰ **Making you wait 10-30 seconds** for simple answers
-- 💸 **Costing you money** in API fees
-- 🔄 **Repeatedly searching** the same code
+AI models have a finite context window—their short-term memory. Every time you ask a question or provide information, you fill that window. 
 
-**Meanwhile, VSCode's Language Server subsystem already knows everything about your code.**
+Perhaps the fastest way to fill that window is by allowing the AI model to use grep and other text searching tools to find the needle in the haystack. HUGE problem with this is now the needle AND the entire haystack is needlessly stuffed into the context window. Once it's full of irrelevant information, the AI loses focus and its performance degrades, forcing you to start over.
 
-Token Saver MCP gives AI instant access to that knowledge. No searching. No waiting. No token waste.
+Token Saver solves this by replacing verbose natural language and bloated text search results with exactly what the AI needs: easy access to focused search results along with the other powerful tools provided by Token Saver.
+
+### Without Token Saver (Cluttered Context):
+```
+"Hey, could you please look at the file named 'src/components/UserCard.js' 
+and find the definition for the 'renderProfileImage' function for me? 
+I need to see what arguments it takes."
+```
+**What happens:**
+1. AI runs grep/find commands
+2. Waits 10-30 seconds
+3. Gets hundreds of lines of context
+4. Burns 5,000+ tokens
+5. Context window fills with irrelevant code
+
+### With Token Saver (Focused Context):
+```
+get_definition('src/components/UserCard.js', 25)
+```
+**What happens:**
+1. Direct LSP call to VSCode
+2. Instant response (<100ms)
+3. Gets exact location and type info
+4. Uses ~50 tokens
+5. Context stays clean and focused
+
+This approach keeps the context window **95% cleaner**, allowing the AI to maintain its focus and perform many more steps before running out of memory. The result? An AI that can work alongside you on complex tasks from start to finish.
 
 ## What This Extension Does
 
@@ -291,7 +299,7 @@ VSCode Marketplace publishing is coming soon! Until then, here are your installa
 "Please use the get_instructions MCP tool to understand how to use Token Saver MCP tools effectively"
 ```
 
-The `get_instructions` tool returns the CLAUDE-MCP-USER.md documentation instantly through the MCP protocol - much more efficient than having the AI read the file directly.
+The `get_instructions` tool returns the AI-MCP-USER.md documentation instantly through the MCP protocol - much more efficient than having the AI read the file directly.
 
 This ensures your AI assistant:
 - Uses Token Saver MCP tools instead of slow text searches
@@ -529,7 +537,7 @@ Returns: Active buffer count, total size, oldest buffer age
 ```json
 {}  // No parameters required
 ```
-Returns: Complete CLAUDE-MCP-USER.md guide with all usage instructions
+Returns: Complete AI-MCP-USER.md guide with all usage instructions
 
 #### `get_supported_languages`
 ```json
