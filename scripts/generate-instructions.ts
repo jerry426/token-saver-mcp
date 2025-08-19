@@ -94,7 +94,8 @@ function generateToolDocs(tool: ParsedMetadata): string {
     })
   }
 
-  sections.push('') // Empty line between tools
+  // Add a prominent separator after each tool
+  sections.push('\n---\n')
   return sections.join('\n')
 }
 
@@ -121,11 +122,15 @@ function generateCategorySection(category: string, tools: ParsedMetadata[]): str
   sections.push(`### ${categoryNames[category]} - ${tools.length} Tools`)
 
   if (categoryDescriptions[category]) {
-    sections.push(`\n${categoryDescriptions[category]}\n`)
+    sections.push(`\n${categoryDescriptions[category]}`)
   }
 
+  // Add separator before first tool
+  sections.push('\n---\n')
+
   tools.forEach((tool) => {
-    sections.push(generateToolDocs(tool))
+    const toolDoc = generateToolDocs(tool)
+    sections.push(toolDoc)
   })
 
   return sections.join('\n')

@@ -1,8 +1,8 @@
 # Token Saver MCP - Usage Guide
 
 <!-- AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY -->
-<!-- Generated from modular tool definitions on 2025-08-19T07:08:38.301Z -->
-<!-- Version: 1.0.4 -->
+<!-- Generated from modular tool definitions on 2025-08-19T07:56:52.665Z -->
+<!-- Version: 1.0.5 -->
 
 ## 🎯 Quick Overview
 
@@ -24,6 +24,8 @@ Token Saver MCP provides **30 tools** organized by category:
 ### Code Navigation (LSP) - 13 Tools
 
 Tools for navigating and understanding code using Language Server Protocol:
+
+---
 
 #### `search_text`
 **Search for text patterns across entire workspace with advanced filtering**
@@ -49,6 +51,8 @@ search_text({
 **Performance:**
 - Speed: < 2s for large workspaces
 - Token Savings: 60-90% vs reading multiple files manually
+
+---
 
 #### `rename_symbol`
 **Safely rename variables, functions, classes across entire codebase**
@@ -76,6 +80,8 @@ rename_symbol({
 - Speed: < 1s for typical symbols, longer for heavily-used ones
 - Token Savings: 99% vs manual find-and-replace
 
+---
+
 #### `get_type_definition`
 **Navigate to where a type is defined (interfaces, classes, type aliases)**
 
@@ -101,6 +107,8 @@ get_type_definition({
 - Speed: < 50ms
 - Token Savings: 95-99% vs searching for type definitions manually
 
+---
+
 #### `get_semantic_tokens`
 **Get detailed semantic analysis for syntax highlighting and code understanding**
 
@@ -123,6 +131,8 @@ get_semantic_tokens({
 **Performance:**
 - Speed: < 300ms for typical files
 - Token Savings: 70-90% vs manually parsing code structure
+
+---
 
 #### `get_references`
 **Find everywhere a symbol is used across the entire codebase**
@@ -149,6 +159,8 @@ get_references({
 - Speed: < 500ms for typical symbols
 - Token Savings: 95-99% vs manual grep/search
 
+---
+
 #### `get_hover`
 **Get documentation, type info, and quick help for any symbol**
 
@@ -174,6 +186,8 @@ get_hover({
 - Speed: < 50ms
 - Token Savings: 90-99% vs searching documentation manually
 
+---
+
 #### `get_document_symbols`
 **Get file outline with all functions, classes, variables, and their hierarchy**
 
@@ -196,6 +210,8 @@ get_document_symbols({
 **Performance:**
 - Speed: < 200ms for typical files
 - Token Savings: 80-95% vs reading entire file
+
+---
 
 #### `get_diagnostics`
 **Get all errors, warnings, and suggestions from language servers**
@@ -220,6 +236,8 @@ get_diagnostics({
 - Speed: < 200ms for single file, < 1s for workspace
 - Token Savings: 80-95% vs reading all error output manually
 
+---
+
 #### `get_definition`
 **Jump to where something is defined**
 
@@ -242,6 +260,8 @@ get_definition({
 **Performance:**
 - Speed: < 50ms
 - Token Savings: 95-99% vs reading entire file
+
+---
 
 #### `get_completions`
 **Get IntelliSense completion suggestions at cursor position**
@@ -268,6 +288,8 @@ get_completions({
 - Speed: < 100ms
 - Token Savings: 90-99% vs manually searching documentation
 
+---
+
 #### `get_code_actions`
 **Get quick fixes, refactorings, and code improvements available at cursor position**
 
@@ -292,6 +314,8 @@ get_code_actions({
 **Performance:**
 - Speed: < 100ms
 - Token Savings: 90-99% vs manually researching fixes
+
+---
 
 #### `get_call_hierarchy`
 **Trace function call relationships - who calls this function or what does it call**
@@ -319,6 +343,8 @@ get_call_hierarchy({
 - Speed: < 300ms for typical functions
 - Token Savings: 90-95% vs manual code tracing
 
+---
+
 #### `find_implementations`
 **Find all concrete implementations of interfaces, abstract classes, or virtual methods**
 
@@ -344,10 +370,14 @@ find_implementations({
 - Speed: < 200ms for typical interfaces
 - Token Savings: 95-99% vs manual inheritance search
 
+---
+
 
 ### Browser Control (CDP) - 8 Tools
 
 Tools for browser automation using Chrome DevTools Protocol:
+
+---
 
 #### `wait_for_element`
 **Wait for element to become available before interaction**
@@ -376,6 +406,8 @@ click_element({ selector: "#menu-button" })
 **Performance:**
 - Speed: 0ms-timeout (depends on page loading)
 
+---
+
 #### `type_in_browser`
 **Type text into any input field using CSS selector**
 
@@ -395,6 +427,8 @@ type_in_browser({ selector: "#username", text: "john.doe" })
 
 **Performance:**
 - Speed: 100-300ms (plus typing simulation time)
+
+---
 
 #### `take_screenshot`
 **Capture visual state of current browser page**
@@ -420,6 +454,8 @@ take_screenshot({})
 **Performance:**
 - Speed: 200-800ms (depends on page complexity)
 
+---
+
 #### `navigate_browser`
 **Navigate to URL and wait**
 
@@ -437,6 +473,8 @@ navigate_browser({ url: "http://localhost:3000" })
 
 **Performance:**
 - Speed: 1-3 seconds (network dependent)
+
+---
 
 #### `get_dom_snapshot`
 **Capture complete DOM structure with interactive elements**
@@ -462,6 +500,8 @@ get_dom_snapshot({})
 **Performance:**
 - Speed: 200ms-1s (depends on page complexity)
 
+---
+
 #### `get_browser_console`
 **Retrieve browser console messages with filtering**
 
@@ -481,6 +521,8 @@ get_browser_console({})
 
 **Performance:**
 - Speed: 50-200ms (depending on message count)
+
+---
 
 #### `execute_in_browser`
 **Execute JavaScript in browser context**
@@ -502,6 +544,8 @@ execute_in_browser({ expression: "document.title" })
 **Performance:**
 - Speed: 500ms-2s (depends on navigation and script complexity)
 
+---
+
 #### `click_element`
 **Click any element using CSS selector**
 
@@ -522,10 +566,14 @@ click_element({ selector: "#submit-button" })
 **Performance:**
 - Speed: 100-500ms (depends on element and page state)
 
+---
+
 
 ### Browser Testing Helpers - 5 Tools
 
 High-level testing utilities that combine multiple operations:
+
+---
 
 #### `test_react_component`
 **Complete React component testing workflow**
@@ -545,6 +593,8 @@ Complete React component testing workflow with automatic error detection and per
 - Verifies React fiber structure
 - Checks for common React antipatterns
 - Provides structured test results
+
+---
 
 #### `test_form_validation`
 **Complete form validation testing workflow**
@@ -568,6 +618,8 @@ Complete form validation testing workflow with automatic error detection and acc
 - Verifies error message display
 - Checks form accessibility
 
+---
+
 #### `test_api_endpoint`
 **Complete API endpoint testing workflow from browser context**
 
@@ -588,6 +640,8 @@ Complete API endpoint testing workflow from browser context with CORS validation
 - Tests from actual client context
 - Captures timing metrics automatically
 - Validates response format
+
+---
 
 #### `debug_javascript_error`
 **Complete JavaScript error debugging and analysis workflow**
@@ -612,6 +666,8 @@ Complete JavaScript error debugging and analysis workflow with stack trace analy
 - Provides debugging recommendations
 - Checks for debugging tool availability
 
+---
+
 #### `check_page_performance`
 **Complete page performance analysis and optimization workflow**
 
@@ -634,8 +690,13 @@ Complete page performance analysis and optimization workflow with Core Web Vital
 - Identifies performance bottlenecks
 - Provides actionable insights
 
+---
+
 
 ### System Tools - 4 Tools
+
+---
+
 #### `retrieve_buffer`
 **Retrieve complete data from a buffered response**
 
@@ -651,6 +712,8 @@ retrieve_buffer({ bufferId: "search_12345" })
 - Buffer IDs are automatically generated and included in buffered responses
 - Buffers expire after 60 seconds for memory management
 - Check buffer_stats to see what buffers are available
+
+---
 
 #### `get_supported_languages`
 **List all VSCode language registrations and workspace activity**
@@ -670,6 +733,8 @@ get_supported_languages()
 - Programming languages get full LSP support (completions, navigation, etc.)
 - Other file types may have limited features
 
+---
+
 #### `get_instructions`
 **Get this documentation**
 
@@ -684,6 +749,8 @@ get_instructions()
 - This returns the complete INSTRUCTIONS.md file
 - Contains all tool documentation, examples, and workflows
 - No need to read any other documentation files
+
+---
 
 #### `get_buffer_stats`
 **Monitor buffer system status and available buffers**
@@ -700,6 +767,8 @@ get_buffer_stats()
 - Displays buffer sizes, creation times, and expiry info
 - Useful for debugging when buffered responses are not found
 - Helps understand memory usage of the buffer system
+
+---
 
 
 ## 🔗 Complete Workflows
@@ -834,4 +903,4 @@ Performance issues?    → check_page_performance
 This documentation is auto-generated from **30 tools** across **4 categories**. Each tool's documentation lives with its implementation, ensuring accuracy and maintainability.
 
 ---
-*Generated by [Token Saver MCP](https://github.com/jerry426/token-saver-mcp) v1.0.4*
+*Generated by [Token Saver MCP](https://github.com/jerry426/token-saver-mcp) v1.0.5*
