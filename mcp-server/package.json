@@ -1,0 +1,30 @@
+{
+  "name": "token-saver-mcp-server",
+  "version": "2.0.0",
+  "description": "Standalone Token Saver MCP server that connects to VSCode via Language Server Gateway",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup src/index.ts --format cjs --dts",
+    "build:stdio": "tsup src/stdio-server.ts --format cjs --outDir dist",
+    "start": "node dist/index.js",
+    "start:stdio": "npm run build:stdio && node dist/stdio-server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "zod": "^3.24.1",
+    "node-fetch": "^3.3.2",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "tsx": "^4.19.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}

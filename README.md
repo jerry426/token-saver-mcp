@@ -299,7 +299,7 @@ VSCode Marketplace publishing is coming soon! Until then, here are your installa
 "Please use the get_instructions MCP tool to understand how to use Token Saver MCP tools effectively"
 ```
 
-The `get_instructions` tool returns the AI-MCP-USER.md documentation instantly through the MCP protocol - much more efficient than having the AI read the file directly.
+The `get_instructions` tool returns the README_USAGE_GUIDE.md documentation instantly through the MCP protocol - much more efficient than having the AI read the file directly.
 
 This ensures your AI assistant:
 - Uses Token Saver MCP tools instead of slow text searches

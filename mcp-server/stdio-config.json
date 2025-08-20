@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "token-saver-stdio": {
+      "command": "node",
+      "args": ["/Users/jerry/VSCode/token-saver-mcp/standalone-server/dist/stdio-server.js"],
+      "env": {
+        "GATEWAY_PORT": "9600"
+      }
+    }
+  }
+}

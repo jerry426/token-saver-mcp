@@ -13,7 +13,7 @@ export default defineConfig({
   outDir: 'dist',
   format: ['cjs'],
   clean: true,
-  minify: true,
+  minify: false,
   bundle: true,
   /**
    * Polyfill Node-specific features (like __dirname, require)

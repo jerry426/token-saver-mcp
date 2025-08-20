@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*"],
+  "exclude": ["standalone-server", "vscode-internals-gateway", "node_modules", "dist", "test", "scripts"]
+}

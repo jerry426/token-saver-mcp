@@ -3,7 +3,7 @@
  * Demonstrates how to use the CDP test helpers
  */
 
-const { CDPTestHelper, runCDPTest } = require('./cdp-test-helpers')
+const { runCDPTest } = require('./cdp-test-helpers')
 
 // Test Suite
 async function runAllTests() {

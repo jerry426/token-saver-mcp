@@ -14,11 +14,12 @@
   "categories": [
     "Other"
   ],
-  "main": "./dist/index.js",
+  "main": "./vscode-internals-gateway/dist/extension.js",
   "icon": "res/icon.png",
   "files": [
     "LICENSE.md",
-    "dist/*",
+    "vscode-internals-gateway/dist/*",
+    "standalone-server/dist/*",
     "res/*",
     "README_USAGE_GUIDE.md"
   ],
@@ -59,8 +60,8 @@
     }
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch --sourcemap",
+    "build": "cd vscode-internals-gateway && npm run compile && cd ../standalone-server && pnpm build",
+    "dev": "cd vscode-internals-gateway && pnpm dev",
     "prepare": "nr update",
     "update": "vscode-ext-gen --output src/generated/meta.ts",
     "lint": "eslint .",
