@@ -56,12 +56,12 @@ Token Saver MCP uses a **groundbreaking split architecture** that separates conc
 ### 🏗️ **Component 1: VSCode Extension (Gateway)**
 - **Purpose**: Simple, stable interface to VSCode's internal APIs
 - **Installs once**: Rarely needs updates or reinstallation
-- **Exposes**: Language Server Protocol (LSP) and Chrome DevTools Protocol (CDP) via HTTP
+- **Exposes**: Language Server Protocol (LSP) features via HTTP
 - **Port**: Runs on 9600 (auto-discovered)
 - **Maintenance**: Set-it-and-forget-it - stays out of your way
 
 ### 🚀 **Component 2: Standalone MCP Server** 
-- **Purpose**: Translates between MCP protocol and VSCode Gateway
+- **Purpose**: Translates between MCP protocol and VSCode Gateway, plus Chrome DevTools Protocol (CDP)
 - **Hot reloadable**: Instant development without VSCode restarts
 - **Language agnostic**: Could be rewritten in Python, Go, Rust, etc.
 - **Port**: Runs on 9700 (configurable)
@@ -242,7 +242,8 @@ This extension exposes VSCode's Language Server Protocol and Chrome DevTools Pro
 
 ### Diagnostics & Search
 - **Diagnostics** (`get_diagnostics`) - Get errors, warnings, and hints for files
-- **Text Search** (`search_text`) - Search for text patterns across all files
+- **Find Text** (`find_text`) - Search for text patterns across all files with intelligent buffering
+- **Find Symbols** (`find_symbols`) - Search for symbols across workspace using semantic search
 - **Semantic Tokens** (`get_semantic_tokens`) - Get detailed syntax highlighting information
 
 ### Browser Control & Testing (CDP Tools)
