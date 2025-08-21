@@ -1,7 +1,7 @@
 {
   "name": "vscode-internals-gateway",
   "displayName": "VSCode Internals Gateway",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Complete programmatic control of VSCode via HTTP - expose ALL VSCode internals to external processes",
   "publisher": "jerry426",
   "engines": {
