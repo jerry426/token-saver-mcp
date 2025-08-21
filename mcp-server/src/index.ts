@@ -36,7 +36,46 @@ function getMcpPort(): number {
   return 9700
 }
 
-const GATEWAY_PORT = process.env.GATEWAY_PORT ? Number.parseInt(process.env.GATEWAY_PORT) : 9600
+function getGatewayPort(): number {
+  // Priority order:
+  // 1. .vscode_gateway_port file (set by VSCode extension)
+  // 2. GATEWAY_PORT environment variable
+  // 3. Default 9600
+  
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const portFile = path.join('..', '.vscode_gateway_port')
+    
+    if (fs.existsSync(portFile)) {
+      const fileContent = fs.readFileSync(portFile, 'utf8').trim()
+      const filePort = parseInt(fileContent)
+      if (!isNaN(filePort) && filePort > 0 && filePort < 65536) {
+        console.log(`🔍 Using VSCode Gateway port ${filePort} from .vscode_gateway_port file`)
+        return filePort
+      } else {
+        console.warn(`⚠️  Invalid port in .vscode_gateway_port file: ${fileContent}`)
+      }
+    }
+  } catch (error: any) {
+    console.warn(`⚠️  Error reading .vscode_gateway_port file: ${error.message}`)
+  }
+  
+  // Fallback to environment variable
+  if (process.env.GATEWAY_PORT) {
+    const envPort = Number.parseInt(process.env.GATEWAY_PORT)
+    if (!isNaN(envPort)) {
+      console.log(`🔍 Using VSCode Gateway port ${envPort} from GATEWAY_PORT environment variable`)
+      return envPort
+    }
+  }
+  
+  // Default fallback
+  console.log(`🔍 Using default VSCode Gateway port 9600`)
+  return 9600
+}
+
+const GATEWAY_PORT = getGatewayPort()
 const MCP_PORT = getMcpPort()
 
 // Session management for MCP protocol

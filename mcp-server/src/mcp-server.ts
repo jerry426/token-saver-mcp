@@ -7,7 +7,46 @@ import { initializeVSCodeAdapter } from './vscode-adapter'
 import { getGatewayClient } from './vscode-gateway-client'
 import { registerAllTools } from './tools/index'
 
-const GATEWAY_PORT = process.env.GATEWAY_PORT ? Number.parseInt(process.env.GATEWAY_PORT) : 9600
+function getGatewayPort(): number {
+  // Priority order:
+  // 1. .vscode_gateway_port file (set by VSCode extension)
+  // 2. GATEWAY_PORT environment variable
+  // 3. Default 9600
+  
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const portFile = path.join('..', '.vscode_gateway_port')
+    
+    if (fs.existsSync(portFile)) {
+      const fileContent = fs.readFileSync(portFile, 'utf8').trim()
+      const filePort = parseInt(fileContent)
+      if (!isNaN(filePort) && filePort > 0 && filePort < 65536) {
+        console.error(`🔍 Using VSCode Gateway port ${filePort} from .vscode_gateway_port file`)
+        return filePort
+      } else {
+        console.error(`⚠️  Invalid port in .vscode_gateway_port file: ${fileContent}`)
+      }
+    }
+  } catch (error: any) {
+    console.error(`⚠️  Error reading .vscode_gateway_port file: ${error.message}`)
+  }
+  
+  // Fallback to environment variable
+  if (process.env.GATEWAY_PORT) {
+    const envPort = Number.parseInt(process.env.GATEWAY_PORT)
+    if (!isNaN(envPort)) {
+      console.error(`🔍 Using VSCode Gateway port ${envPort} from GATEWAY_PORT environment variable`)
+      return envPort
+    }
+  }
+  
+  // Default fallback
+  console.error(`🔍 Using default VSCode Gateway port 9600`)
+  return 9600
+}
+
+const GATEWAY_PORT = getGatewayPort()
 
 async function startStdioServer() {
   // First, check if the VSCode gateway is available
