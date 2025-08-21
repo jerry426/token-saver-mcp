@@ -45,6 +45,9 @@ import * as retrieveBuffer from './system/retrieve-buffer'
 // For STDIO server, all logging must go to stderr to avoid corrupting the JSON-RPC protocol
 const logger = { info: console.error, error: console.error, warn: console.error }
 
+// Store tool handlers for direct access (needed for HTTP endpoint)
+export const toolHandlers = new Map<string, (args: any) => Promise<any>>()
+
 export interface ToolModule {
   metadata: {
     name: string
@@ -97,6 +100,13 @@ const toolModules: ToolModule[] = [
   checkPagePerformance,
   debugJavascriptError,
 ]
+
+// Populate tool handlers map for HTTP endpoint access
+for (const module of toolModules) {
+  if (module.metadata && (module as any).handler) {
+    toolHandlers.set(module.metadata.name, (module as any).handler)
+  }
+}
 
 /**
  * Registers all tools from the modular structure
@@ -161,4 +171,11 @@ export function getAllToolMetadata(): any[] {
       ...module.metadata,
       // Add any additional metadata
     }))
+}
+
+/**
+ * Get a tool handler by name (for HTTP endpoint execution)
+ */
+export function getToolHandler(name: string): ((args: any) => Promise<any>) | null {
+  return toolHandlers.get(name) || null
 }

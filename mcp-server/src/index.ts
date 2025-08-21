@@ -1,5 +1,4 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import cors from 'cors'
@@ -7,10 +6,12 @@ import express from 'express'
 import fs from 'fs'
 import path from 'path'
 import { getToolByName, getToolsByCategory, listAllTools } from './tool-registry'
+import { getAllToolMetadata } from './tools/index'
 import { initializeVSCodeAdapter } from './vscode-adapter'
 import { getGatewayClient } from './vscode-gateway-client'
 import { registerAllTools } from './tools/index'
 import { dashboardClients, getMetricsData, trackError, trackToolCall } from './metrics'
+import { handleHttpMcpRequest } from './mcp-http'
 
 // Read MCP port from file if it exists, otherwise use environment or default
 function getMcpPort(): number {
@@ -52,7 +53,13 @@ const sessions: { [sessionId: string]: SessionInfo } = {}
 let singletonServer: McpServer | null = null
 let singletonTransport: (StreamableHTTPServerTransport & { sessionId?: string }) | null = null
 
+// Export the singleton server for use in other modules
+export function getSingletonServer(): McpServer | null {
+  return singletonServer
+}
+
 async function startServer() {
+  
   // First, check if the VSCode gateway is available
   const gateway = getGatewayClient(GATEWAY_PORT)
 
@@ -84,6 +91,16 @@ async function startServer() {
   // Create Express app for REST API
   const app = express()
   app.use(cors())
+  
+  // Add request logging to debug Claude connection attempts
+  app.use((req, res, next) => {
+    if (req.path === '/mcp') {
+      console.log(`[MCP Request] ${new Date().toISOString()} - ${req.method} ${req.path} from ${req.ip}`)
+      console.log(`[MCP Headers] ${JSON.stringify(req.headers)}`)
+    }
+    next()
+  })
+  
   app.use(express.json({ limit: '50mb' }))
 
   // Health check
@@ -127,13 +144,15 @@ async function startServer() {
 
   // Available tools endpoint
   app.get('/available-tools', (_req, res) => {
-    const categories = getToolsByCategory()
-    const tools = [
-      ...categories.lsp.map(t => ({ ...t, category: 'lsp' })),
-      ...categories.cdp.map(t => ({ ...t, category: 'cdp' })),
-      ...categories.helper.map(t => ({ ...t, category: 'cdp' })), // Helper tools are CDP-based
-      ...categories.system.map(t => ({ ...t, category: 'system' })),
-    ]
+    // Get all tools from the modular system
+    const modularTools = getAllToolMetadata()
+    
+    // Group by category
+    const tools = modularTools.map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      category: tool.category === 'helper' ? 'cdp' : tool.category // Helper tools show as CDP
+    }))
     
     res.json({
       tools,
@@ -219,8 +238,12 @@ async function startServer() {
     }
   })
 
-  // MCP Protocol endpoint (streaming) for Claude Code
-  app.post('/mcp', async (req, res) => {
+  // MCP Protocol endpoint (non-streaming HTTP) for Claude
+  // MUST be /mcp per Anthropic documentation
+  app.post('/mcp', handleHttpMcpRequest)
+
+  // MCP Protocol endpoint (streaming) - MOVED to avoid conflicts
+  app.post('/mcp-streaming', async (req, res) => {
     try {
       // Check for existing session ID (optional, for backwards compatibility)
       const sessionId = req.headers['mcp-session-id'] as string | undefined
@@ -353,29 +376,28 @@ async function startServer() {
     }
   })
 
-  // Start Express server
-  app.listen(MCP_PORT, () => {
-    console.log(`\n🚀 Token Saver MCP Server running on port ${MCP_PORT}`)
-    console.log(`   MCP Protocol: http://localhost:${MCP_PORT}/mcp (for Claude Code)`)
+  // Start Express server (always runs, even in stdio mode)
+  // Explicitly bind to IPv4 127.0.0.1 to avoid IPv6 issues
+  const server = app.listen(MCP_PORT, '127.0.0.1', () => {
+    console.log(`\n🚀 Token Saver MCP Server running on 127.0.0.1:${MCP_PORT}`)
+    console.log(`   MCP Protocol: http://127.0.0.1:${MCP_PORT}/mcp (for Claude Code)`)
     console.log(`   REST API: http://localhost:${MCP_PORT}/mcp/simple`)
     console.log(`   📊 Dashboard: http://localhost:${MCP_PORT}/dashboard`)
     console.log(`   Gateway: Connected to VSCode on port ${GATEWAY_PORT}`)
-    console.log(`   Tools: All 30 tools loaded successfully`)
+    console.log(`   Tools: All ${getAllToolMetadata().length} tools loaded successfully`)
     console.log('\n📝 Development mode: Changes will hot-reload automatically')
   })
+  
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${MCP_PORT} is already in use`)
+      process.exit(1)
+    } else {
+      console.error(`Server error:`, err)
+      process.exit(1)
+    }
+  })
 
-  // Also support stdio mode for direct CLI usage
-  if (process.argv.includes('--stdio')) {
-    const transport = new StdioServerTransport()
-    const stdioServer = new McpServer({
-      name: 'token-saver-mcp',
-      version: '2.0.0',
-    })
-    
-    await registerAllTools(stdioServer)
-    await stdioServer.connect(transport)
-    console.warn('MCP Server running via stdio')
-  }
 }
 
 

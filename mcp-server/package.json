@@ -6,9 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsup src/index.ts --format cjs --dts",
-    "build:stdio": "tsup src/stdio-server.ts --format cjs --outDir dist",
     "start": "node dist/index.js",
-    "start:stdio": "npm run build:stdio && node dist/stdio-server.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

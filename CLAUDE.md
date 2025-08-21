@@ -6,7 +6,46 @@ This file provides guidance to Claude Code (claude.ai/code) when DEVELOPING the 
 
 **See [AI-instructions/INSTRUCTIONS_COMBINED.md](./AI-instructions/INSTRUCTIONS_COMBINED.md) for the complete guide on using MCP tools.**
 
-When working on THIS codebase, you MUST follow the MCP tool usage guidelines. The MCP server at `http://127.0.0.1:9527/mcp` provides direct access to VSCode's language intelligence and browser control.
+When working on THIS codebase, you MUST follow the MCP tool usage guidelines. The MCP server at `http://127.0.0.1:9700/mcp` provides direct access to VSCode's language intelligence and browser control.
+
+## 🚨 CRITICAL: MCP Connection Requirements for Claude Code
+
+**For Token Saver MCP to work with Claude Code, ALL of the following MUST be true:**
+
+1. **IPv4 Binding**: Server MUST bind to `127.0.0.1` (IPv4), NOT `localhost` or `::1` (IPv6)
+   ```javascript
+   app.listen(port, '127.0.0.1', callback) // ✅ CORRECT
+   app.listen(port, callback)              // ❌ WRONG - may bind to IPv6
+   ```
+
+2. **Endpoint Path**: MCP endpoint MUST be at `/mcp` (not `/mcp/http` or other paths)
+   ```
+   http://127.0.0.1:9700/mcp     ✅ CORRECT
+   http://127.0.0.1:9700/mcp/http ❌ WRONG
+   ```
+
+3. **Input Schema**: ALL tools MUST include `inputSchema` in their definitions
+   ```javascript
+   {
+     name: 'tool_name',
+     description: 'Tool description',
+     inputSchema: {           // ✅ REQUIRED
+       type: 'object',
+       properties: {},
+       required: []
+     }
+   }
+   ```
+
+4. **Response Format**: MUST return JSON-RPC format, NOT Server-Sent Events (SSE)
+   ```javascript
+   res.json({ jsonrpc: '2.0', id, result })  // ✅ CORRECT
+   // NOT text/event-stream or streaming      // ❌ WRONG
+   ```
+
+**Testing**: Run `node mcp-server/test-mcp-connectivity.js` to verify all requirements are met.
+
+**Debugging**: Check `mcp-server/server.log` for Claude Code requests (user-agent: claude-code/x.x.x)
 
 ## Project Overview
 

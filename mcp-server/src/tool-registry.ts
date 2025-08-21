@@ -496,6 +496,11 @@ export function listAllTools() {
   return ALL_TOOLS.map(tool => ({
     name: tool.name,
     description: tool.description,
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
   }))
 }
 

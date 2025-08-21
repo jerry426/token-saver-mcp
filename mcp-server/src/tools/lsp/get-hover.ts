@@ -77,6 +77,27 @@ export const metadata: ToolMetadata = {
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler({ uri, line, character }: any): Promise<any> {
+  const result = await getHover(uri, line, character)
+
+  if (!result) {
+    return {
+      content: [{
+        type: 'text',
+        text: 'No hover information available at the specified position.',
+      }],
+    }
+  }
+
+  return {
+    content: [{
+      type: 'text',
+      text: JSON.stringify(result),
+    }],
+  }
+}
+
 // Tool registration function
 export function register(server: McpServer) {
   server.registerTool(
@@ -90,29 +111,6 @@ export function register(server: McpServer) {
         character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
       },
     },
-    async ({ uri, line, character }) => {
-      const result = await getHover(uri, line, character)
-
-      if (!result) {
-        return {
-          content: [{
-            type: 'text',
-            text: 'No hover information available at the specified position.',
-          }],
-        }
-      }
-
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(result),
-        }],
-      }
-    },
+    handler  // Use the exported handler
   )
-}
-
-// Default export for tool handler
-export default async function (args: any) {
-  return getHover(args.uri, args.line, args.character)
 }
