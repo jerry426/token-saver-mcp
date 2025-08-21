@@ -1,5 +1,7 @@
 # Token Saver MCP - Usage Guide
 
+> **📖 For Developers & AI Assistants:** This guide documents all available tools and usage patterns. AI assistants can access the latest version automatically using the `get_instructions` tool rather than reading this file directly.
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY -->
 <!-- Generated from modular tool definitions on 2025-08-21T05:44:57.382Z -->
 <!-- Version: 1.1.0 -->
