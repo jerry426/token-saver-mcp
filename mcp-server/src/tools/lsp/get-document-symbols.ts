@@ -70,18 +70,9 @@ const symbols = get_document_symbols({
   },
 }
 
-// Tool registration function
-export function register(server: McpServer) {
-  server.registerTool(
-    metadata.name,
-    {
-      title: metadata.title,
-      description: metadata.description,
-      inputSchema: {
-        uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
-      },
-    },
-    async ({ uri }) => {
+// Tool handler - single source of truth for execution
+export async function handler(args: any): Promise<any> {
+  const handlerImpl = async ({ uri }) => {
       const result = await getDocumentSymbols(uri)
 
       // Apply buffering if needed (large files can have many symbols)
@@ -101,6 +92,21 @@ export function register(server: McpServer) {
       }
 
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+    }
+  return handlerImpl(args)
+}
+
+// Tool registration function
+export function register(server: McpServer) {
+  server.registerTool(
+    metadata.name,
+    {
+      title: metadata.title,
+      description: metadata.description,
+      inputSchema: {
+        uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
+      },
     },
+    handler,
   )
 }

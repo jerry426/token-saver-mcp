@@ -72,19 +72,8 @@ export const metadata: ToolMetadata = {
   },
 }
 
-export function register(server: McpServer) {
-  server.registerTool(
-    'debug_javascript_error',
-    {
-      title: 'Debug JavaScript Error',
-      description: 'Capture and analyze JavaScript errors on a page with detailed debugging info',
-      inputSchema: {
-        url: z.string().describe('URL where error occurs'),
-        triggerAction: z.string().optional().describe('JavaScript to trigger the error'),
-        waitBeforeTrigger: z.number().optional().describe('Wait time before trigger (ms)'),
-      },
-    },
-    async ({ url, triggerAction, waitBeforeTrigger = 1000 }) => {
+// Tool handler - single source of truth for execution
+export async function handler({ url, triggerAction, waitBeforeTrigger = 1000 }: any): Promise<any> {
       try {
         const client = await ensureCDPConnection()
 
@@ -245,6 +234,20 @@ export function register(server: McpServer) {
           }],
         }
       }
+    }
+
+export function register(server: McpServer) {
+  server.registerTool(
+    'debug_javascript_error',
+    {
+      title: 'Debug JavaScript Error',
+      description: 'Capture and analyze JavaScript errors on a page with detailed debugging info',
+      inputSchema: {
+        url: z.string().describe('URL where error occurs'),
+        triggerAction: z.string().optional().describe('JavaScript to trigger the error'),
+        waitBeforeTrigger: z.number().optional().describe('Wait time before trigger (ms)'),
+      },
     },
+    handler  // Use the exported handler
   )
 }

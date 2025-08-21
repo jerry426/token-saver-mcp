@@ -179,6 +179,11 @@
             color: #92400e;
         }
         
+        .tool-badge.helper {
+            background: #f0fdf4;
+            color: #166534;
+        }
+        
         .tool-badge.system {
             background: #e0e7ff;
             color: #3730a3;
@@ -269,11 +274,15 @@
                 <h2>Available Tools</h2>
                 <div class="metric">
                     <span class="metric-label">LSP Tools</span>
-                    <span class="metric-value" id="lsp-tool-count">13</span>
+                    <span class="metric-value" id="lsp-tool-count">15</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">CDP Tools</span>
-                    <span class="metric-value" id="cdp-tool-count">13</span>
+                    <span class="metric-value" id="cdp-tool-count">8</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Helper Tools</span>
+                    <span class="metric-value" id="helper-tool-count">5</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">System Tools</span>
@@ -357,6 +366,8 @@
                     data.tools.filter(t => t.category === 'lsp').length;
                 document.getElementById('cdp-tool-count').textContent = 
                     data.tools.filter(t => t.category === 'cdp').length;
+                document.getElementById('helper-tool-count').textContent = 
+                    data.tools.filter(t => t.category === 'helper').length;
                 document.getElementById('system-tool-count').textContent = 
                     data.tools.filter(t => t.category === 'system').length;
             } catch (error) {

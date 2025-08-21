@@ -54,6 +54,17 @@ type_in_browser({ selector: "#search", text: "query" })`,
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler({ url }: any): Promise<any> {
+  const result = await navigateBrowser(url)
+  return {
+    content: [{
+      type: 'text',
+      text: result,
+    }],
+  }
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     metadata.name,
@@ -64,14 +75,6 @@ export function register(server: McpServer) {
         url: z.string().describe(metadata.docs.parameters?.url || 'URL to navigate to (e.g., "https://example.com")'),
       },
     },
-    async ({ url }) => {
-      const result = await navigateBrowser(url)
-      return {
-        content: [{
-          type: 'text',
-          text: result,
-        }],
-      }
-    },
+    handler  // Use the exported handler
   )
 }

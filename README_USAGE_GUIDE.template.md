@@ -9,7 +9,7 @@
 Token Saver MCP provides **{{TOTAL_TOOLS}} tools** organized by category:
 {{TOOL_CATEGORIES_SUMMARY}}
 
-**Server URL**: `http://127.0.0.1:9527/mcp` (automatically handles port conflicts)
+**Server URL**: `http://127.0.0.1:9700/mcp` (automatically handles port conflicts)
 **Performance**: 100-1000x faster than text search, saves 90-99% of tokens
 
 ## 📋 THIS FILE CONTAINS EVERYTHING YOU NEED

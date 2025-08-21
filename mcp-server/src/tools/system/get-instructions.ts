@@ -41,15 +41,8 @@ export const metadata: ToolMetadata = {
   },
 }
 
-export function register(server: McpServer) {
-  server.registerTool(
-    metadata.name,
-    {
-      title: metadata.title,
-      description: metadata.description,
-      inputSchema: {},
-    },
-    async () => {
+// Tool handler - single source of truth for execution
+export async function handler(): Promise<any> {
       // For standalone server, read the instructions from the local file system
       try {
         const fs = await import('fs/promises')
@@ -80,6 +73,16 @@ export function register(server: McpServer) {
           }],
         }
       }
+    }
+
+export function register(server: McpServer) {
+  server.registerTool(
+    metadata.name,
+    {
+      title: metadata.title,
+      description: metadata.description,
+      inputSchema: {},
     },
+    handler  // Use the exported handler
   )
 }

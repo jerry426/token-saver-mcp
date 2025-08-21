@@ -69,6 +69,17 @@ get_dom_snapshot({})`,
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler({ selector }: any): Promise<any> {
+  const result = await clickElement(selector)
+  return {
+    content: [{
+      type: 'text',
+      text: result,
+    }],
+  }
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     metadata.name,
@@ -79,14 +90,6 @@ export function register(server: McpServer) {
         selector: z.string().describe(metadata.docs.parameters?.selector || 'CSS selector for the element to click (e.g., \"#submit-button\", \".menu-item\")'),
       },
     },
-    async ({ selector }) => {
-      const result = await clickElement(selector)
-      return {
-        content: [{
-          type: 'text',
-          text: result,
-        }],
-      }
-    },
+    handler  // Use the exported handler
   )
 }

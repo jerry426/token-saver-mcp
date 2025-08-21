@@ -57,6 +57,17 @@ click_element({ selector: "#login-form input[name='username']" })`,
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler(): Promise<any> {
+  const result = await getDOMSnapshot()
+  return {
+    content: [{
+      type: 'text',
+      text: result,
+    }],
+  }
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     metadata.name,
@@ -65,14 +76,6 @@ export function register(server: McpServer) {
       description: metadata.description,
       inputSchema: {},
     },
-    async () => {
-      const result = await getDOMSnapshot()
-      return {
-        content: [{
-          type: 'text',
-          text: result,
-        }],
-      }
-    },
+    handler  // Use the exported handler
   )
 }

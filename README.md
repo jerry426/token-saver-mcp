@@ -59,13 +59,16 @@ Gives AI direct access to VSCode's already-indexed code intelligence - deliverin
 ### 🌐 Chrome DevTools Protocol (CDP) Tools 
 Gives AI complete control over Edge/Chrome browsers for testing, debugging, and automation - enabling **instant verification** of code changes in real browsers.
 
-### 🛠️ Complete Tool Arsenal (30 Tools)
+### 🛠️ Complete Tool Arsenal (31 Tools)
 
-**Language Server Protocol (13 tools):**
-`get_hover`, `get_completions`, `get_definition`, `get_type_definition`, `get_references`, `find_implementations`, `get_document_symbols`, `get_call_hierarchy`, `rename_symbol`, `get_code_actions`, `get_diagnostics`, `get_semantic_tokens`, `search_text`
+**Language Server Protocol (14 tools):**
+`get_hover`, `get_completions`, `get_definition`, `get_type_definition`, `get_references`, `find_implementations`, `get_document_symbols`, `get_call_hierarchy`, `rename_symbol`, `get_code_actions`, `get_diagnostics`, `get_semantic_tokens`, `find_text`, `find_symbols`
 
-**Chrome DevTools Protocol (13 tools):**
-`execute_in_browser`, `navigate_browser`, `click_element`, `type_in_browser`, `get_browser_console`, `get_dom_snapshot`, `take_screenshot`, `wait_for_element`, `test_react_component`, `test_api_endpoint`, `test_form_validation`, `check_page_performance`, `debug_javascript_error`
+**Chrome DevTools Protocol (8 tools):**
+`execute_in_browser`, `navigate_browser`, `click_element`, `type_in_browser`, `get_browser_console`, `get_dom_snapshot`, `take_screenshot`, `wait_for_element`
+
+**Browser Testing Helpers (5 tools):**
+`test_react_component`, `test_api_endpoint`, `test_form_validation`, `check_page_performance`, `debug_javascript_error`
 
 **System Tools (4 tools):**
 `retrieve_buffer`, `get_buffer_stats`, `get_instructions`, `get_supported_languages`
@@ -73,7 +76,7 @@ Gives AI complete control over Edge/Chrome browsers for testing, debugging, and 
 ## Proven Results (Measured, Not Marketing)
 
 - ⚡ **0.5ms average response time** - Verified with Edge browser
-- 🎯 **30 production-ready tools** (13 LSP + 13 CDP + 4 System)
+- 🎯 **31 production-ready tools** (14 LSP + 8 CDP + 5 Helper + 4 System)
 - 📊 **Real-time dashboard** - Watch your savings accumulate
 - 🛡️ **Intelligent buffer protection** - Prevents token overflow
 - 🔄 **Auto-recovery** - WebSocket reconnection, no restarts needed
@@ -303,7 +306,7 @@ The `get_instructions` tool returns the README_USAGE_GUIDE.md documentation inst
 
 This ensures your AI assistant:
 - Uses Token Saver MCP tools instead of slow text searches
-- Understands all 30 available tools and their parameters (13 LSP + 13 CDP + 4 System)
+- Understands all 31 available tools and their parameters (14 LSP + 8 CDP + 5 Helper + 4 System)
 - Follows best practices for maximum performance
 - Saves 90-99% of tokens on code navigation tasks
 - Has direct control over Edge/Chrome browsers for frontend testing and verification
@@ -314,11 +317,11 @@ Token Saver MCP provides both backend code intelligence (LSP) and frontend brows
 
 **Monitor your AI's performance live in your browser:**
 
-Navigate to: `http://127.0.0.1:9527/dashboard`
+Navigate to: `http://127.0.0.1:9700/dashboard`
 
 The dashboard features a **3x3 grid layout** showing:
 - **Top Row:** Server Status | Request Metrics | Token Savings
-- **Middle Row:** Available Tools (full-width display of all 30 tools)
+- **Middle Row:** Available Tools (full-width display of all 31 tools)
 - **Bottom Row:** Recent Activity | Response Time Graph | Most Used Tools
 
 Watch in real-time as:
@@ -343,13 +346,13 @@ Each project needs its own unique port number:
 1. **Assign unique ports to each project:**
    ```bash
    # Project A
-   echo "9527" > /path/to/project-a/.lsp_mcp_port
+   echo "9700" > /path/to/project-a/.lsp_mcp_port
    
    # Project B  
-   echo "9528" > /path/to/project-b/.lsp_mcp_port
+   echo "9701" > /path/to/project-b/.lsp_mcp_port
    
    # Project C
-   echo "9529" > /path/to/project-c/.lsp_mcp_port
+   echo "9702" > /path/to/project-c/.lsp_mcp_port
    ```
 
 2. **Set up Claude for each project:**
@@ -550,7 +553,7 @@ Returns: All languages registered in VSCode organized by category, active langua
 VSCode settings:
 
 - `lsp-mcp.enabled` - Enable/disable the MCP server (default: `true`)
-- `lsp-mcp.port` - Server port (default: `9527`)
+- `lsp-mcp.port` - Server port (default: `9700`)
 - `lsp-mcp.maxRetries` - Port retry attempts if occupied (default: `10`)
 
 ## Testing
@@ -586,7 +589,7 @@ Expected output:
 ```
 ┌─────────────┐     MCP/HTTP      ┌──────────────┐
 │ AI Assistant│ ◄──────────────► │  MCP Server  │
-│ (e.g. Claude)│                   │ (Port 9527)  │
+│ (e.g. Claude)│                   │ (Port 9700)  │
 └─────────────┘                   └──────────────┘
                                           │
                                           ▼
@@ -634,24 +637,49 @@ pnpm run typecheck
 ### Project Structure
 
 ```
-src/
-├── index.ts           # Extension entry point
-├── mcp/
-│   ├── index.ts      # MCP server implementation
-│   ├── tools.ts      # Tool registrations
-│   └── buffer-manager.ts # Intelligent buffer system
-├── lsp/
-│   ├── hover.ts          # Hover information
-│   ├── completion.ts     # Code completions
-│   ├── definition.ts     # Go to definition
-│   ├── references.ts     # Find references
-│   ├── implementations.ts # Find implementations
-│   ├── document-symbols.ts # File structure
-│   ├── call-hierarchy.ts # Call tracing
-│   ├── rename.ts         # Symbol rename
-│   └── text-search.ts    # Text search
+mcp-server/
+├── src/
+│   ├── index.ts           # MCP server entry point
+│   ├── tool-registry.ts   # Tool registration system
+│   ├── buffer-manager.ts  # Intelligent buffer system
+│   └── tools/             # Modular tool definitions
+│       ├── lsp/           # Language Server Protocol tools
+│       │   ├── get-hover.ts
+│       │   ├── get-completions.ts
+│       │   ├── get-definition.ts
+│       │   ├── get-references.ts
+│       │   ├── find-implementations.ts
+│       │   ├── get-document-symbols.ts
+│       │   ├── get-call-hierarchy.ts
+│       │   ├── rename-symbol.ts
+│       │   ├── get-code-actions.ts
+│       │   ├── get-diagnostics.ts
+│       │   ├── get-semantic-tokens.ts
+│       │   ├── get-type-definition.ts
+│       │   ├── find-text.ts
+│       │   └── find-symbols.ts
+│       ├── cdp/           # Chrome DevTools Protocol tools
+│       │   ├── execute-in-browser.ts
+│       │   ├── navigate-browser.ts
+│       │   ├── click-element.ts
+│       │   ├── type-in-browser.ts
+│       │   ├── get-browser-console.ts
+│       │   ├── get-dom-snapshot.ts
+│       │   ├── take-screenshot.ts
+│       │   └── wait-for-element.ts
+│       ├── helper/        # Browser testing helpers
+│       │   ├── test-react-component.ts
+│       │   ├── test-api-endpoint.ts
+│       │   ├── test-form-validation.ts
+│       │   ├── check-page-performance.ts
+│       │   └── debug-javascript-error.ts
+│       └── system/        # System utilities
+│           ├── retrieve-buffer.ts
+│           ├── get-buffer-stats.ts
+│           ├── get-instructions.ts
+│           └── get-supported-languages.ts
 └── utils/
-    └── index.ts      # Logging utilities
+    └── index.ts          # Logging utilities
 ```
 
 ## Troubleshooting
@@ -664,7 +692,7 @@ python3 test/find_mcp_servers.py
 
 **Need a specific port?**
 ```bash
-echo "9527" > .lsp_mcp_port
+echo "9700" > .lsp_mcp_port
 ```
 
 **Port already in use?**

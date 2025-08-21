@@ -80,21 +80,9 @@ export const metadata: ToolMetadata = {
   },
 }
 
-// Tool registration function
-export function register(server: McpServer) {
-  server.registerTool(
-    metadata.name,
-    {
-      title: metadata.title,
-      description: metadata.description,
-      inputSchema: {
-        uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
-        line: z.number().describe(metadata.docs.parameters?.line || 'The line number (0-based)'),
-        character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
-        newName: z.string().describe(metadata.docs.parameters?.newName || 'The new name for the symbol.'),
-      },
-    },
-    async ({ uri, line, character, newName }) => {
+// Tool handler - single source of truth for execution
+export async function handler(args: any): Promise<any> {
+  const handlerImpl = async ({ uri, line, character, newName }) => {
       const result = await renameSymbol(uri, line, character, newName)
 
       if (!result) {
@@ -112,11 +100,24 @@ export function register(server: McpServer) {
           text: JSON.stringify(result),
         }],
       }
-    },
-  )
+    }
+  return handlerImpl(args)
 }
 
-// Default export for tool handler
-export default async function (args: any) {
-  return renameSymbol(args.uri, args.line, args.character, args.newName)
+// Tool registration function
+export function register(server: McpServer) {
+  server.registerTool(
+    metadata.name,
+    {
+      title: metadata.title,
+      description: metadata.description,
+      inputSchema: {
+        uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
+        line: z.number().describe(metadata.docs.parameters?.line || 'The line number (0-based)'),
+        character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
+        newName: z.string().describe(metadata.docs.parameters?.newName || 'The new name for the symbol.'),
+      },
+    },
+    handler,
+  )
 }

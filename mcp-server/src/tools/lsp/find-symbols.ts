@@ -66,6 +66,49 @@ export const metadata: ToolMetadata = {
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler({ query }: any): Promise<any> {
+  // Use VSCode's workspace symbol provider
+  const results = await vscode.commands.executeCommand(
+    'vscode.executeWorkspaceSymbolProvider',
+    query
+  )
+
+  // Handle empty results
+  if (!results || (results as any[]).length === 0) {
+    return { 
+      content: [{ 
+        type: 'text', 
+        text: `No symbols found matching "${query}"` 
+      }] 
+    }
+  }
+
+  // Format results for better readability
+  const formattedResults = (results as any[]).map((symbol: any) => {
+    const uri = symbol.location?.uri?.toString() || ''
+    const fileName = uri.split('/').pop() || 'unknown'
+    const range = symbol.location?.range
+    
+    return {
+      name: symbol.name,
+      kind: symbol.kind, // Function, Class, Variable, etc.
+      file: fileName,
+      uri: uri,
+      line: range ? range.start.line + 1 : null,
+      character: range ? range.start.character : null,
+      containerName: symbol.containerName || '',
+    }
+  })
+
+  return { 
+    content: [{ 
+      type: 'text', 
+      text: JSON.stringify(formattedResults, null, 2) 
+    }] 
+  }
+}
+
 // Tool registration function
 export function register(server: McpServer) {
   server.registerTool(
@@ -77,46 +120,6 @@ export function register(server: McpServer) {
         query: z.string().describe(metadata.docs.parameters?.query || 'The symbol name or pattern to search for'),
       },
     },
-    async ({ query }) => {
-      // Use VSCode's workspace symbol provider
-      const results = await vscode.commands.executeCommand(
-        'vscode.executeWorkspaceSymbolProvider',
-        query
-      )
-
-      // Handle empty results
-      if (!results || (results as any[]).length === 0) {
-        return { 
-          content: [{ 
-            type: 'text', 
-            text: `No symbols found matching "${query}"` 
-          }] 
-        }
-      }
-
-      // Format results for better readability
-      const formattedResults = (results as any[]).map((symbol: any) => {
-        const uri = symbol.location?.uri?.toString() || ''
-        const fileName = uri.split('/').pop() || 'unknown'
-        const range = symbol.location?.range
-        
-        return {
-          name: symbol.name,
-          kind: symbol.kind, // Function, Class, Variable, etc.
-          file: fileName,
-          uri: uri,
-          line: range ? range.start.line + 1 : null,
-          character: range ? range.start.character : null,
-          containerName: symbol.containerName || '',
-        }
-      })
-
-      return { 
-        content: [{ 
-          type: 'text', 
-          text: JSON.stringify(formattedResults, null, 2) 
-        }] 
-      }
-    },
+    handler  // Use the exported handler
   )
 }

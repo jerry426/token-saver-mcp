@@ -64,6 +64,17 @@ get_browser_console({ filter: "error" })`,
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler({ filter, clear }: any): Promise<any> {
+  const result = await getBrowserConsole(filter, clear)
+  return {
+    content: [{
+      type: 'text',
+      text: result,
+    }],
+  }
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     metadata.name,
@@ -75,14 +86,6 @@ export function register(server: McpServer) {
         clear: z.boolean().optional().describe(metadata.docs.parameters?.clear || 'Clear console messages after retrieving (default: false)'),
       },
     },
-    async ({ filter, clear }) => {
-      const result = await getBrowserConsole(filter, clear)
-      return {
-        content: [{
-          type: 'text',
-          text: result,
-        }],
-      }
-    },
+    handler  // Use the exported handler
   )
 }

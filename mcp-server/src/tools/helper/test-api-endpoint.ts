@@ -71,21 +71,8 @@ export const metadata: ToolMetadata = {
   },
 }
 
-export function register(server: McpServer) {
-  server.registerTool(
-    'test_api_endpoint',
-    {
-      title: 'Test API Endpoint from Browser',
-      description: 'Test an API endpoint from the browser context, checking response and CORS',
-      inputSchema: {
-        url: z.string().describe('Base URL of the application'),
-        endpoint: z.string().describe('API endpoint path (e.g., /api/users)'),
-        method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']).optional().describe('HTTP method'),
-        body: z.string().optional().describe('Request body as JSON string'),
-        headers: z.record(z.string()).optional().describe('Additional headers'),
-      },
-    },
-    async ({ url, endpoint, method = 'GET', body, headers }) => {
+// Tool handler - single source of truth for execution
+export async function handler({ url, endpoint, method = 'GET', body, headers }: any): Promise<any> {
       try {
         const client = await ensureCDPConnection()
 
@@ -172,6 +159,22 @@ export function register(server: McpServer) {
           }],
         }
       }
+    }
+
+export function register(server: McpServer) {
+  server.registerTool(
+    'test_api_endpoint',
+    {
+      title: 'Test API Endpoint from Browser',
+      description: 'Test an API endpoint from the browser context, checking response and CORS',
+      inputSchema: {
+        url: z.string().describe('Base URL of the application'),
+        endpoint: z.string().describe('API endpoint path (e.g., /api/users)'),
+        method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']).optional().describe('HTTP method'),
+        body: z.string().optional().describe('Request body as JSON string'),
+        headers: z.record(z.string()).optional().describe('Additional headers'),
+      },
     },
+    handler  // Use the exported handler
   )
 }

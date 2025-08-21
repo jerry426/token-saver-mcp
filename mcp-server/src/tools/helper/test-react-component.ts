@@ -66,19 +66,8 @@ export const metadata: ToolMetadata = {
   },
 }
 
-export function register(server: McpServer) {
-  server.registerTool(
-    'test_react_component',
-    {
-      title: 'Test React Component',
-      description: 'Test if a React component is properly rendered with correct props and state',
-      inputSchema: {
-        url: z.string().describe('URL where component is rendered'),
-        componentName: z.string().describe('Name of the React component to test'),
-        waitForSelector: z.string().optional().describe('CSS selector to wait for before testing'),
-      },
-    },
-    async ({ url, componentName, waitForSelector }) => {
+// Tool handler - single source of truth for execution
+export async function handler({ url, componentName, waitForSelector }: any): Promise<any> {
       try {
         const client = await ensureCDPConnection()
 
@@ -152,6 +141,20 @@ export function register(server: McpServer) {
           }],
         }
       }
+    }
+
+export function register(server: McpServer) {
+  server.registerTool(
+    'test_react_component',
+    {
+      title: 'Test React Component',
+      description: 'Test if a React component is properly rendered with correct props and state',
+      inputSchema: {
+        url: z.string().describe('URL where component is rendered'),
+        componentName: z.string().describe('Name of the React component to test'),
+        waitForSelector: z.string().optional().describe('CSS selector to wait for before testing'),
+      },
     },
+    handler  // Use the exported handler
   )
 }

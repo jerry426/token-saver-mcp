@@ -77,20 +77,9 @@ export const metadata: ToolMetadata = {
   },
 }
 
-// Tool registration function
-export function register(server: McpServer) {
-  server.registerTool(
-    metadata.name,
-    {
-      title: metadata.title,
-      description: metadata.description,
-      inputSchema: {
-        uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
-        line: z.number().describe(metadata.docs.parameters?.line || 'The line number (0-based)'),
-        character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
-      },
-    },
-    async ({ uri, line, character }) => {
+// Tool handler - single source of truth for execution
+export async function handler(args: any): Promise<any> {
+  const handlerImpl = async ({ uri, line, character }) => {
       const result = await getCodeActions(uri, line, character)
 
       if (!result || result.length === 0) {
@@ -108,11 +97,23 @@ export function register(server: McpServer) {
           text: JSON.stringify(result, null, 2),
         }],
       }
-    },
-  )
+    }
+  return handlerImpl(args)
 }
 
-// Default export for tool handler
-export default async function (args: any) {
-  return getCodeActions(args.uri, args.line, args.character)
+// Tool registration function
+export function register(server: McpServer) {
+  server.registerTool(
+    metadata.name,
+    {
+      title: metadata.title,
+      description: metadata.description,
+      inputSchema: {
+        uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
+        line: z.number().describe(metadata.docs.parameters?.line || 'The line number (0-based)'),
+        character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
+      },
+    },
+    handler,
+  )
 }

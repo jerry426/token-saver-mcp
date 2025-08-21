@@ -195,8 +195,8 @@ async function main() {
     const version = packageJson.version
 
     // Find and parse all tool files
-    const toolFiles = await glob('src/mcp/tools/**/*.ts', {
-      ignore: ['**/*.test.ts', '**/index.ts', '**/types.ts'],
+    const toolFiles = await glob('mcp-server/src/tools/**/*.ts', {
+      ignore: ['**/*.test.ts', '**/index.ts', '**/types.ts', '**/tool-manager.ts', '**/lsp-implementations.ts'],
     })
 
     const tools: ParsedMetadata[] = []

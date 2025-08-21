@@ -73,6 +73,17 @@ get_browser_console({ filter: "error" })`,
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler({ selector, text }: any): Promise<any> {
+  const result = await typeInBrowser(selector, text)
+  return {
+    content: [{
+      type: 'text',
+      text: result,
+    }],
+  }
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     metadata.name,
@@ -84,14 +95,6 @@ export function register(server: McpServer) {
         text: z.string().describe(metadata.docs.parameters?.text || 'Text to type into the input field'),
       },
     },
-    async ({ selector, text }) => {
-      const result = await typeInBrowser(selector, text)
-      return {
-        content: [{
-          type: 'text',
-          text: result,
-        }],
-      }
-    },
+    handler  // Use the exported handler
   )
 }

@@ -76,20 +76,8 @@ export const metadata: ToolMetadata = {
   },
 }
 
-export function register(server: McpServer) {
-  server.registerTool(
-    'test_form_validation',
-    {
-      title: 'Test Form Validation',
-      description: 'Test form validation by filling fields and attempting submission',
-      inputSchema: {
-        url: z.string().describe('URL of the form page'),
-        formSelector: z.string().describe('CSS selector for the form'),
-        fields: z.record(z.string()).describe('Field name/id to value mapping'),
-        submitButtonSelector: z.string().optional().describe('Submit button selector (default: finds submit button)'),
-      },
-    },
-    async ({ url, formSelector, fields, submitButtonSelector }) => {
+// Tool handler - single source of truth for execution
+export async function handler({ url, formSelector, fields, submitButtonSelector }: any): Promise<any> {
       try {
         const client = await ensureCDPConnection()
 
@@ -245,6 +233,21 @@ export function register(server: McpServer) {
           }],
         }
       }
+    }
+
+export function register(server: McpServer) {
+  server.registerTool(
+    'test_form_validation',
+    {
+      title: 'Test Form Validation',
+      description: 'Test form validation by filling fields and attempting submission',
+      inputSchema: {
+        url: z.string().describe('URL of the form page'),
+        formSelector: z.string().describe('CSS selector for the form'),
+        fields: z.record(z.string()).describe('Field name/id to value mapping'),
+        submitButtonSelector: z.string().optional().describe('Submit button selector (default: finds submit button)'),
+      },
     },
+    handler  // Use the exported handler
   )
 }

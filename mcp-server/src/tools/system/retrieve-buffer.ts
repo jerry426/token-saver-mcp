@@ -50,17 +50,8 @@ export const metadata: ToolMetadata = {
   },
 }
 
-export function register(server: McpServer) {
-  server.registerTool(
-    metadata.name,
-    {
-      title: metadata.title,
-      description: metadata.description,
-      inputSchema: {
-        bufferId: z.string().describe(metadata.docs.parameters?.bufferId || 'The buffer ID returned in a buffered response'),
-      },
-    },
-    async ({ bufferId }: { bufferId: string }) => {
+// Tool handler - single source of truth for execution
+export async function handler({ bufferId }: any): Promise<any> {
       // Retrieve from central buffer manager
       const data = retrieveBuffer(bufferId)
 
@@ -85,6 +76,18 @@ export function register(server: McpServer) {
           text: JSON.stringify(data, null, 2) 
         }] 
       }
+    }
+
+export function register(server: McpServer) {
+  server.registerTool(
+    metadata.name,
+    {
+      title: metadata.title,
+      description: metadata.description,
+      inputSchema: {
+        bufferId: z.string().describe(metadata.docs.parameters?.bufferId || 'The buffer ID returned in a buffered response'),
+      },
     },
+    handler  // Use the exported handler
   )
 }

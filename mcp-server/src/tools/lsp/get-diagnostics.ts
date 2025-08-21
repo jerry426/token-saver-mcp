@@ -71,18 +71,9 @@ if (errors.length > 0) {
   },
 }
 
-// Tool registration function
-export function register(server: McpServer) {
-  server.registerTool(
-    metadata.name,
-    {
-      title: metadata.title,
-      description: metadata.description,
-      inputSchema: {
-        uri: z.string().optional().describe(metadata.docs.parameters?.uri || 'Optional file URI to get diagnostics for. If not provided, gets diagnostics for all files.'),
-      },
-    },
-    async ({ uri }) => {
+// Tool handler - single source of truth for execution
+export async function handler(args: any): Promise<any> {
+  const handlerImpl = async ({ uri }) => {
       const result = await getDiagnostics(uri)
 
       // Apply buffering if needed (diagnostics can be numerous across workspace)
@@ -102,6 +93,21 @@ export function register(server: McpServer) {
       }
 
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+    }
+  return handlerImpl(args)
+}
+
+// Tool registration function
+export function register(server: McpServer) {
+  server.registerTool(
+    metadata.name,
+    {
+      title: metadata.title,
+      description: metadata.description,
+      inputSchema: {
+        uri: z.string().optional().describe(metadata.docs.parameters?.uri || 'Optional file URI to get diagnostics for. If not provided, gets diagnostics for all files.'),
+      },
     },
+    handler,
   )
 }

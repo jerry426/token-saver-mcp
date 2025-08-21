@@ -70,18 +70,8 @@ export const metadata: ToolMetadata = {
   },
 }
 
-export function register(server: McpServer) {
-  server.registerTool(
-    'check_page_performance',
-    {
-      title: 'Check Page Performance',
-      description: 'Analyze page load performance and get optimization recommendations',
-      inputSchema: {
-        url: z.string().describe('URL to analyze'),
-        waitTime: z.number().optional().describe('Additional wait time in ms (default: 3000)'),
-      },
-    },
-    async ({ url, waitTime = 3000 }) => {
+// Tool handler - single source of truth for execution
+export async function handler({ url, waitTime = 3000 }: any): Promise<any> {
       try {
         const client = await ensureCDPConnection()
 
@@ -225,6 +215,19 @@ export function register(server: McpServer) {
           }],
         }
       }
+    }
+
+export function register(server: McpServer) {
+  server.registerTool(
+    'check_page_performance',
+    {
+      title: 'Check Page Performance',
+      description: 'Analyze page load performance and get optimization recommendations',
+      inputSchema: {
+        url: z.string().describe('URL to analyze'),
+        waitTime: z.number().optional().describe('Additional wait time in ms (default: 3000)'),
+      },
     },
+    handler  // Use the exported handler
   )
 }

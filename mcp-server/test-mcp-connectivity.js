@@ -136,16 +136,16 @@ async function runTests() {
   }
   
   // Test 5: Tool count
-  console.log('\n5️⃣  Testing tool count (should be 30)...')
+  console.log('\n5️⃣  Testing tool count (should be 31)...')
   try {
     const response = await makeRequest('tools/list')
     const toolCount = response.result?.tools?.length || 0
     
-    if (toolCount === 30) {
-      console.log('✅ All 30 tools are available')
+    if (toolCount === 31) {
+      console.log('✅ All 31 tools are available')
       tests.push({ test: 'Tool count', status: 'PASS' })
     } else {
-      console.log(`⚠️  Found ${toolCount} tools (expected 30)`)
+      console.log(`⚠️  Found ${toolCount} tools (expected 31)`)
       tests.push({ test: 'Tool count', status: 'WARN' })
     }
   } catch (error) {

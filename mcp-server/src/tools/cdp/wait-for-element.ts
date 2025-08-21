@@ -76,6 +76,17 @@ type_in_browser({ selector: "#search", text: "query" })`,
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler({ selector, timeout }: any): Promise<any> {
+  const result = await waitForElement(selector, timeout)
+  return {
+    content: [{
+      type: 'text',
+      text: result,
+    }],
+  }
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     metadata.name,
@@ -87,14 +98,6 @@ export function register(server: McpServer) {
         timeout: z.number().optional().describe(metadata.docs.parameters?.timeout || 'Timeout in milliseconds (default: 5000)'),
       },
     },
-    async ({ selector, timeout }) => {
-      const result = await waitForElement(selector, timeout)
-      return {
-        content: [{
-          type: 'text',
-          text: result,
-        }],
-      }
-    },
+    handler  // Use the exported handler
   )
 }

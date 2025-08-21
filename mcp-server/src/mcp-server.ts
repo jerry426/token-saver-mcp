@@ -2,7 +2,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { getToolByName, listAllTools } from './tool-registry'
+import { getToolByName, listAllTools } from './tools/index'
 import { initializeVSCodeAdapter } from './vscode-adapter'
 import { getGatewayClient } from './vscode-gateway-client'
 import { registerAllTools } from './tools/index'

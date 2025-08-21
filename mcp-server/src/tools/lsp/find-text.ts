@@ -95,25 +95,8 @@ export const metadata: ToolMetadata = {
   },
 }
 
-// Tool registration function
-export function register(server: McpServer) {
-  server.registerTool(
-    metadata.name,
-    {
-      title: metadata.title,
-      description: metadata.description,
-      inputSchema: {
-        query: z.string().describe(metadata.docs.parameters?.query || ''),
-        useRegExp: z.boolean().optional().describe(metadata.docs.parameters?.useRegExp || ''),
-        isCaseSensitive: z.boolean().optional().describe(metadata.docs.parameters?.isCaseSensitive || ''),
-        matchWholeWord: z.boolean().optional().describe(metadata.docs.parameters?.matchWholeWord || ''),
-        maxResults: z.number().optional().describe(metadata.docs.parameters?.maxResults || ''),
-        includes: z.array(z.string()).optional().describe(metadata.docs.parameters?.includes || ''),
-        excludes: z.array(z.string()).optional().describe(metadata.docs.parameters?.excludes || ''),
-        includeContext: z.number().optional().describe(metadata.docs.parameters?.includeContext || ''),
-      },
-    },
-    async ({ query, useRegExp, isCaseSensitive, matchWholeWord, maxResults = 20, includes, excludes, includeContext = 0 }) => {
+// Tool handler - single source of truth for execution
+export async function handler({ query, useRegExp, isCaseSensitive, matchWholeWord, maxResults = 20, includes, excludes, includeContext = 0 }: any): Promise<any> {
       try {
         // Build ripgrep command
         let rgCommand = 'rg'
@@ -254,7 +237,27 @@ export function register(server: McpServer) {
           }]
         }
       }
+    }
+
+// Tool registration function
+export function register(server: McpServer) {
+  server.registerTool(
+    metadata.name,
+    {
+      title: metadata.title,
+      description: metadata.description,
+      inputSchema: {
+        query: z.string().describe(metadata.docs.parameters?.query || ''),
+        useRegExp: z.boolean().optional().describe(metadata.docs.parameters?.useRegExp || ''),
+        isCaseSensitive: z.boolean().optional().describe(metadata.docs.parameters?.isCaseSensitive || ''),
+        matchWholeWord: z.boolean().optional().describe(metadata.docs.parameters?.matchWholeWord || ''),
+        maxResults: z.number().optional().describe(metadata.docs.parameters?.maxResults || ''),
+        includes: z.array(z.string()).optional().describe(metadata.docs.parameters?.includes || ''),
+        excludes: z.array(z.string()).optional().describe(metadata.docs.parameters?.excludes || ''),
+        includeContext: z.number().optional().describe(metadata.docs.parameters?.includeContext || ''),
+      },
     },
+    handler  // Use the exported handler
   )
 }
 

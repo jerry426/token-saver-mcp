@@ -174,9 +174,9 @@ Extension settings (in VSCode settings.json):
 - URI parameters in MCP tools must be properly encoded file:// URIs
 - Python test clients available in `test/` directory for debugging
 
-## Complete Feature Set - All 17 Tools
+## Complete Feature Set - All 31 Tools
 
-### LSP Tools (13 tools)
+### LSP Tools (15 tools)
 1. ✅ **get_hover** - Documentation and type information
 2. ✅ **get_completions** - Code completion suggestions
 3. ✅ **get_definition** - Jump to symbol definitions
@@ -189,13 +189,31 @@ Extension settings (in VSCode settings.json):
 10. ✅ **get_code_actions** - Get available quick fixes and refactorings
 11. ✅ **get_diagnostics** - Get errors/warnings
 12. ✅ **get_semantic_tokens** - Semantic highlighting info
-13. ✅ **search_text** - Text pattern search across workspace
+13. ✅ **find_text** - Text pattern search across workspace
+14. ✅ **find_symbols** - Symbol search across workspace
+
+### CDP Tools (8 tools)
+15. ✅ **execute_in_browser** - Execute JavaScript in browser context
+16. ✅ **get_browser_console** - Get console messages from browser
+17. ✅ **navigate_browser** - Navigate browser to URL and wait for load
+18. ✅ **get_dom_snapshot** - Get current DOM including forms, links, images
+19. ✅ **click_element** - Click element using CSS selector
+20. ✅ **type_in_browser** - Type text into input field using CSS selector
+21. ✅ **take_screenshot** - Take screenshot of current browser page
+22. ✅ **wait_for_element** - Wait for element to appear in DOM
+
+### Helper Tools (5 tools)
+23. ✅ **test_react_component** - Test React component rendering with props/state
+24. ✅ **test_api_endpoint** - Test API endpoint from browser context with CORS
+25. ✅ **test_form_validation** - Test form validation by filling and submitting
+26. ✅ **check_page_performance** - Analyze page performance with optimization tips
+27. ✅ **debug_javascript_error** - Capture and analyze JavaScript errors
 
 ### System Tools (4 tools)
-14. ✅ **retrieve_buffer** - Retrieve full data from buffered responses
-15. ✅ **get_buffer_stats** - Monitor buffer system status
-16. ✅ **get_instructions** - Self-documenting API guide
-17. ✅ **get_supported_languages** - List all VSCode languages and their status
+28. ✅ **retrieve_buffer** - Retrieve full data from buffered responses
+29. ✅ **get_buffer_stats** - Monitor buffer system status
+30. ✅ **get_instructions** - Self-documenting API guide
+31. ✅ **get_supported_languages** - List all VSCode languages and their status
 
 All tools feature automatic Language Server activation - no manual file opening required!
 

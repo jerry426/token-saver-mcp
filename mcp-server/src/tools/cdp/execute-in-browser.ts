@@ -66,6 +66,17 @@ export const metadata: ToolMetadata = {
   },
 }
 
+// Tool handler - single source of truth for execution
+export async function handler({ expression, url }: any): Promise<any> {
+  const result = await executeInBrowser(expression, url)
+  return {
+    content: [{
+      type: 'text',
+      text: result,
+    }],
+  }
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     metadata.name,
@@ -77,14 +88,6 @@ export function register(server: McpServer) {
         url: z.string().optional().describe(metadata.docs.parameters?.url || 'Optional URL to navigate to before executing (e.g., "https://example.com")'),
       },
     },
-    async ({ expression, url }) => {
-      const result = await executeInBrowser(expression, url)
-      return {
-        content: [{
-          type: 'text',
-          text: result,
-        }],
-      }
-    },
+    handler  // Use the exported handler
   )
 }

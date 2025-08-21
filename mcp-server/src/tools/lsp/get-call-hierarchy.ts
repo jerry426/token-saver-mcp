@@ -88,21 +88,9 @@ const incoming = get_call_hierarchy({
   },
 }
 
-// Tool registration function
-export function register(server: McpServer) {
-  server.registerTool(
-    metadata.name,
-    {
-      title: metadata.title,
-      description: metadata.description,
-      inputSchema: {
-        uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
-        line: z.number().describe(metadata.docs.parameters?.line || 'The line number (0-based)'),
-        character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
-        direction: z.enum(['incoming', 'outgoing']).optional().describe(metadata.docs.parameters?.direction || 'Direction: "incoming" for callers, "outgoing" for callees (default: incoming)'),
-      },
-    },
-    async ({ uri, line, character, direction }) => {
+// Tool handler - single source of truth for execution
+export async function handler(args: any): Promise<any> {
+  const handlerImpl = async ({ uri, line, character, direction }) => {
       const result = await getCallHierarchy(uri, line, character, direction || 'incoming')
 
       if (!result || result.length === 0) {
@@ -120,11 +108,24 @@ export function register(server: McpServer) {
           text: JSON.stringify(result, null, 2),
         }],
       }
-    },
-  )
+    }
+  return handlerImpl(args)
 }
 
-// Default export for tool handler
-export default async function (args: any) {
-  return getCallHierarchy(args.uri, args.line, args.character)
+// Tool registration function
+export function register(server: McpServer) {
+  server.registerTool(
+    metadata.name,
+    {
+      title: metadata.title,
+      description: metadata.description,
+      inputSchema: {
+        uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
+        line: z.number().describe(metadata.docs.parameters?.line || 'The line number (0-based)'),
+        character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
+        direction: z.enum(['incoming', 'outgoing']).optional().describe(metadata.docs.parameters?.direction || 'Direction: "incoming" for callers, "outgoing" for callees (default: incoming)'),
+      },
+    },
+    handler,
+  )
 }

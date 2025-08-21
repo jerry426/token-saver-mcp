@@ -1,7 +1,7 @@
 {
   "name": "token-saver-mcp",
   "displayName": "Token Saver MCP",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "Stop watching AI burn tokens on text searches. Get instant answers from VSCode's already-indexed code intelligence. 100x faster, 90% fewer tokens.",
   "publisher": "jerry426",
   "author": "Jerry Jackson <https://github.com/jerry426>",

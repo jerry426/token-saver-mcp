@@ -179,3 +179,65 @@ export function getAllToolMetadata(): any[] {
 export function getToolHandler(name: string): ((args: any) => Promise<any>) | null {
   return toolHandlers.get(name) || null
 }
+
+/**
+ * List all tools (for HTTP endpoint compatibility)
+ */
+export function listAllTools(): any[] {
+  return toolModules
+    .filter(module => module.metadata)
+    .map(module => ({
+      name: module.metadata.name,
+      title: module.metadata.title,
+      description: module.metadata.description,
+      category: module.metadata.category,
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        required: []
+      }
+    }))
+}
+
+/**
+ * Get tool by name (for HTTP endpoint compatibility)
+ */
+export function getToolByName(name: string): any | null {
+  const module = toolModules.find(m => m.metadata?.name === name)
+  if (!module) return null
+  
+  return {
+    name: module.metadata.name,
+    title: module.metadata.title,
+    description: module.metadata.description,
+    category: module.metadata.category,
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
+  }
+}
+
+/**
+ * Get tools by category (for HTTP endpoint compatibility)
+ */
+export function getToolsByCategory(): Record<string, any[]> {
+  const categories: Record<string, any[]> = {}
+  
+  for (const module of toolModules) {
+    if (module.metadata) {
+      const category = module.metadata.category
+      if (!categories[category]) {
+        categories[category] = []
+      }
+      categories[category].push({
+        name: module.metadata.name,
+        title: module.metadata.title,
+        description: module.metadata.description
+      })
+    }
+  }
+  
+  return categories
+}
