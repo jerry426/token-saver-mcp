@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
 Helper script to generate the Claude MCP setup command for a project.
-Reads the .lsp_mcp_port file and outputs the command to run.
+Reads the .mcp_server_port file and outputs the command to run.
 """
 import os
 import sys
 from pathlib import Path
 
 def get_project_port(project_path="."):
-    """Read the port number from .lsp_mcp_port file"""
-    port_file = Path(project_path) / ".lsp_mcp_port"
+    """Read the port number from .mcp_server_port file"""
+    port_file = Path(project_path) / ".mcp_server_port"
     
     if not port_file.exists():
         return None
@@ -29,12 +29,12 @@ def main():
     port = get_project_port(project_path)
     
     if port is None:
-        print(f"❌ No .lsp_mcp_port file found in {project_path}")
+        print(f"❌ No .mcp_server_port file found in {project_path}")
         print("\nTo fix this:")
-        print(f"1. Create a .lsp_mcp_port file in your project root")
+        print(f"1. Create a .mcp_server_port file in your project root")
         print(f"2. Add a unique port number (e.g., 9527, 9528, 9529)")
         print(f"\nExample:")
-        print(f"   echo '9528' > {project_path}/.lsp_mcp_port")
+        print(f"   echo '9528' > {project_path}/.mcp_server_port")
         sys.exit(1)
     
     print(f"✅ Found port {port} for project: {project_name}")
@@ -56,7 +56,7 @@ def main():
     print("1. Make sure VSCode is running with this project open")
     print("2. The Token Saver MCP extension should show as active in the status bar")
     print(f"3. The MCP server will be available at port {port}")
-    print("\nNote: Each project needs a unique port number in its .lsp_mcp_port file")
+    print("\nNote: Each project needs a unique port number in its .mcp_server_port file")
 
 if __name__ == "__main__":
     main()

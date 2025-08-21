@@ -55,12 +55,12 @@ case "$1" in
     test)
         shift
         PROJECT_PATH="${1:-$(pwd)}"
-        if [ -f "$PROJECT_PATH/.lsp_mcp_port" ]; then
-            PORT=$(cat "$PROJECT_PATH/.lsp_mcp_port")
+        if [ -f "$PROJECT_PATH/.mcp_server_port" ]; then
+            PORT=$(cat "$PROJECT_PATH/.mcp_server_port")
             echo -e "${GREEN}Testing MCP server on port $PORT...${NC}"
             curl -s "http://127.0.0.1:$PORT/workspace-info" | python3 -m json.tool
         else
-            echo -e "${YELLOW}No .lsp_mcp_port file found in $PROJECT_PATH${NC}"
+            echo -e "${YELLOW}No .mcp_server_port file found in $PROJECT_PATH${NC}"
             echo "Run './mcp setup $PROJECT_PATH' first"
         fi
         ;;

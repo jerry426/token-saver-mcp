@@ -581,7 +581,30 @@ export function activate(context: vscode.ExtensionContext) {
   })
 
   // Start server with retry logic and better error handling
-  const startPort = vscode.workspace.getConfiguration('vscode-internals-gateway').get<number>('port', 9600)
+  // Check for port override file first
+  let startPort = 9600 // Default port
+  
+  if (vscode.workspace.workspaceFolders?.[0]) {
+    const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath
+    const portFile = require('path').join(workspaceRoot, '.vscode_gateway_port')
+    
+    try {
+      const fs = require('fs')
+      if (fs.existsSync(portFile)) {
+        const fileContent = fs.readFileSync(portFile, 'utf8').trim()
+        const filePort = parseInt(fileContent)
+        if (!isNaN(filePort) && filePort > 0 && filePort < 65536) {
+          startPort = filePort
+          outputChannel.appendLine(`Using port ${startPort} from .vscode_gateway_port file`)
+        } else {
+          outputChannel.appendLine(`Invalid port in .vscode_gateway_port file: ${fileContent}, using default ${startPort}`)
+        }
+      }
+    } catch (error: any) {
+      outputChannel.appendLine(`Error reading .vscode_gateway_port file: ${error.message}, using default ${startPort}`)
+    }
+  }
+  
   const maxRetries = 10
 
   let currentPort = startPort
@@ -591,7 +614,27 @@ export function activate(context: vscode.ExtensionContext) {
     server = app.listen(currentPort, '127.0.0.1', () => {
       outputChannel.appendLine(`VSCode Internals Gateway listening on port ${currentPort}`)
       outputChannel.show(true)
-      vscode.window.showInformationMessage(`VSCode Internals Gateway started on port ${currentPort}`)
+      
+      // Write the actual port back to .vscode_gateway_port file for MCP server coordination
+      if (vscode.workspace.workspaceFolders?.[0]) {
+        const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath
+        const portFile = require('path').join(workspaceRoot, '.vscode_gateway_port')
+        
+        try {
+          const fs = require('fs')
+          fs.writeFileSync(portFile, currentPort.toString())
+          outputChannel.appendLine(`Updated .vscode_gateway_port with actual port: ${currentPort}`)
+        } catch (error: any) {
+          outputChannel.appendLine(`Warning: Could not write .vscode_gateway_port file: ${error.message}`)
+        }
+      }
+
+      // Show status message with context about port selection
+      const portMessage = currentPort === startPort 
+        ? `VSCode Internals Gateway started on port ${currentPort}`
+        : `VSCode Internals Gateway started on port ${currentPort} (auto-selected due to conflict)`
+        
+      vscode.window.showInformationMessage(portMessage)
 
       // Store the actual port in global state
       context.globalState.update('gatewayPort', currentPort)

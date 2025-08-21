@@ -29,9 +29,9 @@ find_available_port() {
     echo $port
 }
 
-# Step 2: Check if .lsp_mcp_port exists
-if [ -f "$PROJECT_DIR/.lsp_mcp_port" ]; then
-    EXISTING_PORT=$(cat "$PROJECT_DIR/.lsp_mcp_port")
+# Step 2: Check if .mcp_server_port exists
+if [ -f "$PROJECT_DIR/.mcp_server_port" ]; then
+    EXISTING_PORT=$(cat "$PROJECT_DIR/.mcp_server_port")
     echo -e "${YELLOW}Found existing port configuration: $EXISTING_PORT${NC}"
     read -p "Keep existing port $EXISTING_PORT? (y/n): " -n 1 -r
     echo
@@ -39,13 +39,13 @@ if [ -f "$PROJECT_DIR/.lsp_mcp_port" ]; then
         PORT=$EXISTING_PORT
     else
         PORT=$(find_available_port)
-        echo $PORT > "$PROJECT_DIR/.lsp_mcp_port"
+        echo $PORT > "$PROJECT_DIR/.mcp_server_port"
         echo -e "${GREEN}✓ Updated port to: $PORT${NC}"
     fi
 else
     PORT=$(find_available_port)
-    echo $PORT > "$PROJECT_DIR/.lsp_mcp_port"
-    echo -e "${GREEN}✓ Created .lsp_mcp_port file with port: $PORT${NC}"
+    echo $PORT > "$PROJECT_DIR/.mcp_server_port"
+    echo -e "${GREEN}✓ Created .mcp_server_port file with port: $PORT${NC}"
 fi
 
 # Step 3: Create or update workspace ID

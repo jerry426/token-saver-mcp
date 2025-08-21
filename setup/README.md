@@ -19,7 +19,7 @@ Use the `mcp` script in the project root for all operations:
 
 The extension uses specific configuration files to avoid conflicts with other MCP-related tools:
 
-- `.lsp_mcp_port` - Contains the port number for this project's MCP server
+- `.mcp_server_port` - Contains the port number for this project's MCP server
 - `.lsp_mcp_workspace_id` - Unique identifier for the workspace
 - `.lsp_mcp_status.json` - Status information and metadata
 
@@ -52,12 +52,12 @@ Discovers all running MCP servers on the system.
 Each project needs a unique port. The extension supports two modes:
 
 1. **Fixed Port Mode** (recommended for multiple projects):
-   - Create `.lsp_mcp_port` file with a unique port number
+   - Create `.mcp_server_port` file with a unique port number
    - Extension uses this exact port
    - Allows multiple projects to coexist
 
 2. **Dynamic Port Mode** (default):
-   - No `.lsp_mcp_port` file
+   - No `.mcp_server_port` file
    - Uses configuration or finds next available port
    - May change between sessions
 
@@ -66,7 +66,7 @@ Each project needs a unique port. The extension supports two modes:
 If MCP tools aren't working:
 
 1. Check server is running: `./mcp status`
-2. Verify port configuration: `cat .lsp_mcp_port`
+2. Verify port configuration: `cat .mcp_server_port`
 3. Test server directly: `curl http://127.0.0.1:PORT/workspace-info`
 4. Check VSCode output panel for "Token Saver MCP"
 5. Reload VSCode window if needed
@@ -74,7 +74,7 @@ If MCP tools aren't working:
 ## File Naming Convention
 
 All configuration files use the `lsp_mcp` prefix to avoid conflicts:
-- `.lsp_mcp_port` (not `.mcp_port`)
+- `.mcp_server_port` (not `.mcp_port`)
 - `.lsp_mcp_workspace_id` (not `mcp_workspace_id`)
 - `.lsp_mcp_status.json` (not `.mcp_status.json`)
 

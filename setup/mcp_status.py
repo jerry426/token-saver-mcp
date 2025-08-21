@@ -56,8 +56,8 @@ def find_projects_with_mcp():
         if not base_dir.exists():
             continue
             
-        # Look for .lsp_mcp_port files
-        for port_file in base_dir.rglob(".lsp_mcp_port"):
+        # Look for .mcp_server_port files
+        for port_file in base_dir.rglob(".mcp_server_port"):
             project_dir = port_file.parent
             try:
                 port = int(port_file.read_text().strip())

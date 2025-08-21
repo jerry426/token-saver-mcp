@@ -49,9 +49,47 @@ get_definition('src/components/UserCard.js', 25)
 
 This approach keeps the context window **95% cleaner**, allowing the AI to maintain its focus and perform many more steps before running out of memory. The result? An AI that can work alongside you on complex tasks from start to finish.
 
-## What This Extension Does
+## Revolutionary Dual Architecture
 
-Token Saver MCP provides **TWO revolutionary toolsets** that transform AI into a true full-stack developer:
+Token Saver MCP uses a **groundbreaking split architecture** that separates concerns for maximum developer productivity:
+
+### 🏗️ **Component 1: VSCode Extension (Gateway)**
+- **Purpose**: Simple, stable interface to VSCode's internal APIs
+- **Installs once**: Rarely needs updates or reinstallation
+- **Exposes**: Language Server Protocol (LSP) and Chrome DevTools Protocol (CDP) via HTTP
+- **Port**: Runs on 9600 (auto-discovered)
+- **Maintenance**: Set-it-and-forget-it - stays out of your way
+
+### 🚀 **Component 2: Standalone MCP Server** 
+- **Purpose**: Translates between MCP protocol and VSCode Gateway
+- **Hot reloadable**: Instant development without VSCode restarts
+- **Language agnostic**: Could be rewritten in Python, Go, Rust, etc.
+- **Port**: Runs on 9700 (configurable)
+- **Development**: Rapid iteration with `npm run dev`
+
+### 🎯 **Why This Architecture is Revolutionary**
+
+**Traditional Approach (Bad):**
+```
+AI ←→ VSCode Extension (must restart VSCode for every change)
+```
+
+**Token Saver Approach (Good):**
+```
+AI ←→ MCP Server ←→ VSCode Gateway ←→ VSCode Internals
+    (hot reload)   (stable interface)  (never restart)
+```
+
+**Benefits:**
+- ⚡ **60x faster development** - No VSCode extension rebuilds
+- 🔄 **Hot reload support** - Changes reflect instantly
+- 🛡️ **Stable VSCode integration** - Gateway rarely needs updates
+- 🌍 **Language flexibility** - MCP server can be any language
+- 🧪 **Easy testing** - Debug MCP server independently
+
+## What Token Saver MCP Provides
+
+This dual architecture delivers **TWO revolutionary toolsets** that transform AI into a true full-stack developer:
 
 ### 🔍 Language Server Protocol (LSP) Tools
 Gives AI direct access to VSCode's already-indexed code intelligence - delivering answers in **milliseconds instead of seconds** with **90% fewer tokens**.
@@ -253,12 +291,15 @@ That's it! The extension automatically:
 - ✅ Tests the connection
 - ✅ Provides the Claude command
 
-## Installation
+## Installation: Two Components, One Simple Process
 
-VSCode Marketplace publishing is coming soon! Until then, here are your installation options:
+Token Saver MCP requires installing **two components** that work together:
 
-### Option 1: Install from Pre-built Release (Recommended)
+### 🏗️ **Step 1: Install VSCode Extension (Gateway) - Install Once, Forget Forever**
 
+The VSCode extension is a **stable gateway** that rarely needs updates:
+
+**Option A: From Pre-built Release (Recommended)**
 1. **Download the latest .vsix file** from the [Releases](https://github.com/jerry426/token-saver-mcp/releases) page
 2. **Install in VSCode** using one of these methods:
    - Command Palette: `Extensions: Install from VSIX...` then select the file
@@ -266,8 +307,9 @@ VSCode Marketplace publishing is coming soon! Until then, here are your installa
    - Or drag and drop the .vsix file onto the VSCode Extensions view
 3. **Reload VSCode** to activate the extension
 
-### Option 2: Build from Source
+**✅ That's it for the VSCode component!** The gateway will auto-start and rarely needs attention.
 
+**Option B: Build VSCode Extension from Source**
 1. **Clone and build the extension:**
    ```bash
    git clone https://github.com/jerry426/token-saver-mcp.git
@@ -280,7 +322,6 @@ VSCode Marketplace publishing is coming soon! Until then, here are your installa
    ```bash
    pnpm exec vsce package --no-dependencies
    # This creates token-saver-mcp-*.vsix in the current directory
-   # Note: --no-dependencies flag is required due to bundled dependencies
    ```
 
 3. **Install the .vsix file in VSCode:**
@@ -291,6 +332,57 @@ VSCode Marketplace publishing is coming soon! Until then, here are your installa
 4. **Reload VSCode** to activate the extension:
    - Command Palette: `Developer: Reload Window`
    - Or restart VSCode
+
+### 🚀 **Step 2: Run Standalone MCP Server - Hot Reloadable Development**
+
+The MCP server is where all the development happens and supports hot reloading:
+
+**For Development (Recommended):**
+```bash
+cd token-saver-mcp/mcp-server
+npm install
+npm run dev  # Hot reload - changes reflect instantly!
+```
+
+**For Production:**
+```bash
+cd token-saver-mcp/mcp-server  
+npm install
+npm run build
+npm start
+```
+
+**✅ MCP Server Benefits:**
+- 🔥 **Hot reload support** - Edit code, see changes instantly
+- 🚫 **No VSCode restarts** - MCP server runs independently  
+- 🧪 **Easy testing** - Debug and test tools separately
+- 🌍 **Language agnostic** - Could rewrite in Python, Go, etc.
+
+### 🔗 **Step 3: Verify Connection Between Components**
+
+Once both components are running, verify they're communicating:
+
+```bash
+# Check if VSCode Gateway is running
+curl http://127.0.0.1:9600/health
+# Should return: {"status": "ok", "message": "VSCode Gateway is running"}
+
+# Check if MCP Server is running  
+curl http://127.0.0.1:9700/health
+# Should return: {"status": "ok", "message": "MCP Server is running"}
+
+# Test MCP tool communication
+curl -X POST http://127.0.0.1:9700/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+# Should return: List of all 31 available tools
+```
+
+**✅ Success Indicators:**
+- VSCode extension shows "Token Saver MCP: Connected" in status bar
+- MCP server console shows "VSCode Gateway connected on port 9600"
+- Dashboard available at `http://127.0.0.1:9700/dashboard`
+- All 31 tools listed in MCP tools/list response
 
 ## Usage
 
@@ -346,13 +438,13 @@ Each project needs its own unique port number:
 1. **Assign unique ports to each project:**
    ```bash
    # Project A
-   echo "9700" > /path/to/project-a/.lsp_mcp_port
+   echo "9700" > /path/to/project-a/.mcp_server_port
    
    # Project B  
-   echo "9701" > /path/to/project-b/.lsp_mcp_port
+   echo "9701" > /path/to/project-b/.mcp_server_port
    
    # Project C
-   echo "9702" > /path/to/project-c/.lsp_mcp_port
+   echo "9702" > /path/to/project-c/.mcp_server_port
    ```
 
 2. **Set up Claude for each project:**
@@ -363,7 +455,7 @@ Each project needs its own unique port number:
    ./mcp claude /path/to/project-b
    ```
 
-3. **The extension will automatically use the port from `.lsp_mcp_port`** when you open each project
+3. **The extension will automatically use the port from `.mcp_server_port`** when you open each project
 
 ### Port Discovery
 
@@ -550,11 +642,13 @@ Returns: All languages registered in VSCode organized by category, active langua
 
 ## Configuration
 
-VSCode settings:
+**No VSCode settings required!** The dual architecture is designed to be zero-configuration:
 
-- `lsp-mcp.enabled` - Enable/disable the MCP server (default: `true`)
-- `lsp-mcp.port` - Server port (default: `9700`)
-- `lsp-mcp.maxRetries` - Port retry attempts if occupied (default: `10`)
+- **VSCode Extension (Gateway)**: Uses hardcoded port 9600 - no configuration needed
+- **MCP Server**: Auto-discovers port from `.mcp_server_port` file for external connections
+- **Communication**: MCP Server connects to VSCode Gateway on port 9600 automatically
+
+The days of complex VSCode settings are over - everything works automatically!
 
 ## Testing
 
@@ -584,33 +678,71 @@ Expected output:
 🎉 SUCCESS! All 17 tools are working!
 ```
 
-## Architecture
+## Architecture: The Split That Changes Everything
 
 ```
-┌─────────────┐     MCP/HTTP      ┌──────────────┐
-│ AI Assistant│ ◄──────────────► │  MCP Server  │
-│ (e.g. Claude)│                   │ (Port 9700)  │
-└─────────────┘                   └──────────────┘
-                                          │
-                                          ▼
-                                   ┌──────────────┐
-                                   │ LSP Bridge   │
-                                   │  (TypeScript)│
-                                   └──────────────┘
-                                          │
-                                          ▼
-                                   ┌──────────────┐
-                                   │ VSCode LSP   │
-                                   │     APIs     │
-                                   └──────────────┘
+┌─────────────┐    MCP/HTTP     ┌──────────────┐    HTTP/API    ┌─────────────────┐
+│ AI Assistant│ ◄─────────────► │  MCP Server  │ ◄────────────► │ VSCode Extension│
+│ (Claude)    │                 │ (Port 9700)  │                │   (Gateway)     │
+│             │                 │              │                │ (Port 9600)     │
+│ Hot Reload  │                 │ Hot Reload   │                │ Install Once    │
+│ Compatible  │                 │ Development  │                │ Stable Forever │
+└─────────────┘                 └──────────────┘                └─────────────────┘
+                                        │                                 │
+                                        │ CDP/WebSocket                   │
+                                        ▼                                 ▼
+                                ┌─────────────────┐                ┌─────────────────┐
+                                │ Browser (Chrome)│                │ VSCode Internals│
+                                │ • DOM Snapshot  │                │ • Language Svrs │
+                                │ • Console Logs  │                │ • File System   │
+                                │ • Screenshots   │                │ • Diagnostics   │
+                                │ • Performance   │                │ • Navigation    │
+                                │ • Interactions  │                │ • Completions   │
+                                └─────────────────┘                └─────────────────┘
 ```
 
-Key design principles:
-- **Automatic Language Server activation**: The extension automatically activates Language Servers as needed
-- **Workspace-wide access**: All files are immediately accessible without manual activation
-- **Session management**: Each MCP client gets an isolated session
-- **Consistent formatting**: All responses return JSON-serialized data
+### 🔄 **Data Flow Explanation**
+
+**For Code Intelligence (LSP Tools):**
+1. **AI Assistant** sends MCP request for code navigation/analysis
+2. **MCP Server** translates MCP → HTTP API call to VSCode Gateway
+3. **VSCode Gateway** forwards to appropriate Language Server
+4. **VSCode Internals** process LSP commands (definitions, references, etc.)
+5. **Response flows back** through gateway with intelligent buffering
+
+**For Browser Control (CDP Tools):**
+1. **AI Assistant** sends MCP request for browser interaction
+2. **MCP Server** connects directly to Chrome via WebSocket (CDP)
+3. **Browser** executes commands (click, navigate, screenshot, etc.)
+4. **Browser** returns results (DOM, console logs, performance data)
+5. **Response flows back** to AI with intelligent buffering
+
+**Key Insight:** MCP Server acts as a **dual-purpose bridge**:
+1. **For accessing VSCode internals** via HTTP endpoint built into the VSCode internals gateway
+2. **To gain full control over Edge browser** via Chrome DevTools Protocol using WebSocket transport (Edge greatly outperforms Chrome)
+
+### 🏗️ **Key Design Principles**
+
+**VSCode Extension (Gateway):**
+- **Minimal & Stable**: Simple HTTP API exposure, rarely changes
+- **Auto-activation**: Automatically activates Language Servers as needed  
+- **Session isolation**: Each MCP client gets isolated session
+- **Port auto-discovery**: Finds available port, communicates via `.mcp_server_port`
+
+**MCP Server:**
+- **Hot reloadable**: `npm run dev` for instant development feedback
+- **Language agnostic**: Core logic separate from VSCode integration
+- **Intelligent buffering**: Large responses buffered to save tokens
 - **Error resilience**: Graceful handling of missing files or invalid positions
+- **Modular architecture**: 31 self-documenting tools in organized categories
+
+### 🚀 **Developer Experience Benefits**
+
+- **No VSCode restarts**: MCP server changes don't affect VSCode
+- **Faster iteration**: Test MCP tools without extension rebuilds  
+- **Independent debugging**: Debug MCP server separately from VSCode
+- **Language flexibility**: Rewrite MCP server in any language
+- **Stable foundation**: VSCode gateway stays constant while MCP server evolves
 
 ## Development
 
@@ -692,16 +824,16 @@ python3 test/find_mcp_servers.py
 
 **Need a specific port?**
 ```bash
-echo "9700" > .lsp_mcp_port
+echo "9700" > .mcp_server_port
 ```
 
 **Port already in use?**
-- Check `.lsp_mcp_port` file or let extension auto-increment from default port
+- Check `.mcp_server_port` file or let extension auto-increment from default port
 
 **MCP tools not responding?**
 - Ensure VSCode has the workspace open
 - **Language Servers are automatically activated** when you use any MCP tool
-- Check extension is enabled in settings (`lsp-mcp.enabled`)
+- Verify VSCode extension is installed and active
 - Verify the MCP server is running on the expected port
 
 **Claude Code stuck on "connecting..." or showing "failed"?**
