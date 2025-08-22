@@ -72,16 +72,16 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler({ url, waitTime = 3000 }: any): Promise<any> {
-      try {
-        const client = await ensureCDPConnection()
+  try {
+    const client = await ensureCDPConnection()
 
-        // Clear any existing marks
-        await client.execute('performance.clearMarks(); performance.clearMeasures();')
+    // Clear any existing marks
+    await client.execute('performance.clearMarks(); performance.clearMeasures();')
 
-        await client.navigate(url)
-        await new Promise(resolve => setTimeout(resolve, waitTime))
+    await client.navigate(url)
+    await new Promise(resolve => setTimeout(resolve, waitTime))
 
-        const metrics = await client.execute(`
+    const metrics = await client.execute(`
           (() => {
             const perf = performance.getEntriesByType('navigation')[0];
             const resources = performance.getEntriesByType('resource');
@@ -158,64 +158,64 @@ export async function handler({ url, waitTime = 3000 }: any): Promise<any> {
           })()
         `)
 
-        // Generate recommendations
-        const recommendations = []
+    // Generate recommendations
+    const recommendations = []
 
-        if (metrics.timing.loadComplete > 3000) {
-          recommendations.push('Page load time exceeds 3 seconds - consider optimization')
-        }
-
-        if (metrics.resources.byType?.js?.count > 20) {
-          recommendations.push('Too many JavaScript files - consider bundling')
-        }
-
-        if (metrics.resources.byType?.image?.size > 1000000) {
-          recommendations.push('Large image payload - optimize images')
-        }
-
-        if (metrics.documentStats.nodes > 3000) {
-          recommendations.push('Large DOM size - consider virtualization')
-        }
-
-        if (metrics.memory && metrics.memory.usedJSHeapSize > 50) {
-          recommendations.push('High memory usage - check for memory leaks')
-        }
-
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: true,
-              url,
-              performance: metrics,
-              recommendations,
-              summary: {
-                loadTime: `${Math.round(metrics.timing.loadComplete)}ms`,
-                resourceCount: metrics.resources.total,
-                domNodes: metrics.documentStats.nodes,
-                grade: metrics.timing.loadComplete < 1000
-                  ? 'A'
-                  : metrics.timing.loadComplete < 2000
-                    ? 'B'
-                    : metrics.timing.loadComplete < 3000 ? 'C' : 'D',
-              },
-            }, null, 2),
-          }],
-        }
-      }
-      catch (error: any) {
-        logger.error('Failed to check page performance:', error)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: error.message,
-            }, null, 2),
-          }],
-        }
-      }
+    if (metrics.timing.loadComplete > 3000) {
+      recommendations.push('Page load time exceeds 3 seconds - consider optimization')
     }
+
+    if (metrics.resources.byType?.js?.count > 20) {
+      recommendations.push('Too many JavaScript files - consider bundling')
+    }
+
+    if (metrics.resources.byType?.image?.size > 1000000) {
+      recommendations.push('Large image payload - optimize images')
+    }
+
+    if (metrics.documentStats.nodes > 3000) {
+      recommendations.push('Large DOM size - consider virtualization')
+    }
+
+    if (metrics.memory && metrics.memory.usedJSHeapSize > 50) {
+      recommendations.push('High memory usage - check for memory leaks')
+    }
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: true,
+          url,
+          performance: metrics,
+          recommendations,
+          summary: {
+            loadTime: `${Math.round(metrics.timing.loadComplete)}ms`,
+            resourceCount: metrics.resources.total,
+            domNodes: metrics.documentStats.nodes,
+            grade: metrics.timing.loadComplete < 1000
+              ? 'A'
+              : metrics.timing.loadComplete < 2000
+                ? 'B'
+                : metrics.timing.loadComplete < 3000 ? 'C' : 'D',
+          },
+        }, null, 2),
+      }],
+    }
+  }
+  catch (error: any) {
+    logger.error('Failed to check page performance:', error)
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: false,
+          error: error.message,
+        }, null, 2),
+      }],
+    }
+  }
+}
 
 export function register(server: McpServer) {
   server.registerTool(
@@ -228,6 +228,6 @@ export function register(server: McpServer) {
         waitTime: z.number().optional().describe('Additional wait time in ms (default: 3000)'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

@@ -98,6 +98,6 @@ export function register(server: McpServer) {
         timeout: z.number().optional().describe(metadata.docs.parameters?.timeout || 'Timeout in milliseconds (default: 5000)'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

@@ -2,8 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
-import { getDocumentSymbols } from '../lsp-implementations'
 import { bufferResponse } from '../../buffer-manager'
+import { getDocumentSymbols } from '../lsp-implementations'
 
 /**
  * Tool metadata for documentation generation
@@ -72,27 +72,27 @@ const symbols = get_document_symbols({
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
-  const handlerImpl = async ({ uri }) => {
-      const result = await getDocumentSymbols(uri)
+  const handlerImpl = async ({ uri }: { uri: string }) => {
+    const result = await getDocumentSymbols(uri)
 
-      // Apply buffering if needed (large files can have many symbols)
-      const bufferedResponse = bufferResponse('get_document_symbols', result)
+    // Apply buffering if needed (large files can have many symbols)
+    const bufferedResponse = bufferResponse('get_document_symbols', result)
 
-      if (bufferedResponse.metadata) {
-        console.error(`[get_document_symbols] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              type: 'buffered_response',
-              ...bufferedResponse,
-            }, null, 2),
-          }],
-        }
+    if (bufferedResponse.metadata) {
+      console.error(`[get_document_symbols] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            type: 'buffered_response',
+            ...bufferedResponse,
+          }, null, 2),
+        }],
       }
-
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
     }
+
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+  }
   return handlerImpl(args)
 }
 

@@ -90,6 +90,6 @@ export function register(server: McpServer) {
         selector: z.string().describe(metadata.docs.parameters?.selector || 'CSS selector for the element to click (e.g., \"#submit-button\", \".menu-item\")'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

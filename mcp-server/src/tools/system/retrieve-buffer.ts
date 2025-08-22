@@ -52,31 +52,31 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler({ bufferId }: any): Promise<any> {
-      // Retrieve from central buffer manager
-      const data = retrieveBuffer(bufferId)
+  // Retrieve from central buffer manager
+  const data = retrieveBuffer(bufferId)
 
-      if (!data) {
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              error: 'Buffer not found or expired',
-              bufferId,
-              hint: 'Buffers expire after 60 seconds. Use get_buffer_stats to see available buffers.',
-            }, null, 2),
-          }],
-        }
-      }
-
-      console.error(`[retrieve_buffer] Retrieved buffer ${bufferId}`)
-      
-      return { 
-        content: [{ 
-          type: 'text', 
-          text: JSON.stringify(data, null, 2) 
-        }] 
-      }
+  if (!data) {
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: 'Buffer not found or expired',
+          bufferId,
+          hint: 'Buffers expire after 60 seconds. Use get_buffer_stats to see available buffers.',
+        }, null, 2),
+      }],
     }
+  }
+
+  console.error(`[retrieve_buffer] Retrieved buffer ${bufferId}`)
+
+  return {
+    content: [{
+      type: 'text',
+      text: JSON.stringify(data, null, 2),
+    }],
+  }
+}
 
 export function register(server: McpServer) {
   server.registerTool(
@@ -88,6 +88,6 @@ export function register(server: McpServer) {
         bufferId: z.string().describe(metadata.docs.parameters?.bufferId || 'The buffer ID returned in a buffered response'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

@@ -3,7 +3,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { getHover } from '../lsp-implementations'
-import { bufferResponse } from '../../buffer-manager'
 
 /**
  * Tool metadata for documentation generation
@@ -111,6 +110,6 @@ export function register(server: McpServer) {
         character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

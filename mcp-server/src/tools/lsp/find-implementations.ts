@@ -3,7 +3,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { findImplementations } from '../lsp-implementations'
-import { bufferResponse } from '../../buffer-manager'
 
 /**
  * Tool metadata for documentation generation
@@ -79,25 +78,25 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
-  const handlerImpl = async ({ uri, line, character }) => {
-      const result = await findImplementations(uri, line, character)
+  const handlerImpl = async ({ uri, line, character }: { uri: string, line: number, character: number }) => {
+    const result = await findImplementations(uri, line, character)
 
-      if (!result || result.length === 0) {
-        return {
-          content: [{
-            type: 'text',
-            text: 'No implementations found for the symbol at the specified position.',
-          }],
-        }
-      }
-
+    if (!result || result.length === 0) {
       return {
         content: [{
           type: 'text',
-          text: JSON.stringify(result),
+          text: 'No implementations found for the symbol at the specified position.',
         }],
       }
     }
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(result),
+      }],
+    }
+  }
   return handlerImpl(args)
 }
 

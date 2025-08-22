@@ -22,11 +22,13 @@ import * as testFormValidation from './helper/test-form-validation'
 import * as testReactComponent from './helper/test-react-component'
 
 import * as findImplementations from './lsp/find-implementations'
+import * as findSymbols from './lsp/find-symbols'
+import * as findText from './lsp/find-text'
 import * as getCallHierarchy from './lsp/get-call-hierarchy'
+
 import * as getCodeActions from './lsp/get-code-actions'
 // Import all LSP tools
 import * as getCompletions from './lsp/get-completions'
-
 import * as getDefinition from './lsp/get-definition'
 import * as getDiagnostics from './lsp/get-diagnostics'
 import * as getDocumentSymbols from './lsp/get-document-symbols'
@@ -35,8 +37,6 @@ import * as getReferences from './lsp/get-references'
 import * as getSemanticTokens from './lsp/get-semantic-tokens'
 import * as getTypeDefinition from './lsp/get-type-definition'
 import * as renameSymbol from './lsp/rename-symbol'
-import * as findSymbols from './lsp/find-symbols'
-import * as findText from './lsp/find-text'
 import * as getBufferStats from './system/get-buffer-stats'
 import * as getInstructions from './system/get-instructions'
 import * as getSupportedLanguages from './system/get-supported-languages'
@@ -194,8 +194,8 @@ export function listAllTools(): any[] {
       inputSchema: {
         type: 'object',
         properties: {},
-        required: []
-      }
+        required: [],
+      },
     }))
 }
 
@@ -204,8 +204,9 @@ export function listAllTools(): any[] {
  */
 export function getToolByName(name: string): any | null {
   const module = toolModules.find(m => m.metadata?.name === name)
-  if (!module) return null
-  
+  if (!module)
+    return null
+
   return {
     name: module.metadata.name,
     title: module.metadata.title,
@@ -214,8 +215,8 @@ export function getToolByName(name: string): any | null {
     inputSchema: {
       type: 'object',
       properties: {},
-      required: []
-    }
+      required: [],
+    },
   }
 }
 
@@ -224,7 +225,7 @@ export function getToolByName(name: string): any | null {
  */
 export function getToolsByCategory(): Record<string, any[]> {
   const categories: Record<string, any[]> = {}
-  
+
   for (const module of toolModules) {
     if (module.metadata) {
       const category = module.metadata.category
@@ -234,10 +235,10 @@ export function getToolsByCategory(): Record<string, any[]> {
       categories[category].push({
         name: module.metadata.name,
         title: module.metadata.title,
-        description: module.metadata.description
+        description: module.metadata.description,
       })
     }
   }
-  
+
   return categories
 }

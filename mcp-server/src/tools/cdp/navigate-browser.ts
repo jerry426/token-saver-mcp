@@ -75,6 +75,6 @@ export function register(server: McpServer) {
         url: z.string().describe(metadata.docs.parameters?.url || 'URL to navigate to (e.g., "https://example.com")'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

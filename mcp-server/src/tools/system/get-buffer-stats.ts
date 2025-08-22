@@ -46,29 +46,29 @@ export const metadata: ToolMetadata = {
 // Tool handler - single source of truth for execution
 export async function handler(): Promise<any> {
   const stats = getBufferStats()
-  
+
   if (stats.activeBuffers === 0) {
-    return { 
-      content: [{ 
-        type: 'text', 
-        text: 'No active buffers. Buffers are created when tools return large responses exceeding 2500 tokens.' 
-      }] 
+    return {
+      content: [{
+        type: 'text',
+        text: 'No active buffers. Buffers are created when tools return large responses exceeding 2500 tokens.',
+      }],
     }
   }
-  
+
   const totalSizeMB = (stats.totalSize / (1024 * 1024)).toFixed(2)
-  
-  return { 
-    content: [{ 
-      type: 'text', 
+
+  return {
+    content: [{
+      type: 'text',
       text: JSON.stringify({
         activeBuffers: stats.activeBuffers,
-        totalSizeMB: totalSizeMB,
+        totalSizeMB,
         oldestBufferAge: stats.oldestBuffer ? `${Math.floor(stats.oldestBuffer / 1000)}s` : null,
         buffers: stats.buffers,
-        note: 'Buffers expire automatically after 60 seconds'
-      }, null, 2) 
-    }] 
+        note: 'Buffers expire automatically after 60 seconds',
+      }, null, 2),
+    }],
   }
 }
 
@@ -80,6 +80,6 @@ export function register(server: McpServer) {
       description: metadata.description,
       inputSchema: {},
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

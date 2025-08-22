@@ -2,45 +2,49 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { getToolByName, listAllTools } from './tools/index'
+import { listAllTools, registerAllTools } from './tools/index'
 import { initializeVSCodeAdapter } from './vscode-adapter'
 import { getGatewayClient } from './vscode-gateway-client'
-import { registerAllTools } from './tools/index'
 
 function getGatewayPort(): number {
   // Priority order:
   // 1. .vscode_gateway_port file (set by VSCode extension)
   // 2. GATEWAY_PORT environment variable
   // 3. Default 9600
-  
+
   try {
-    const fs = require('fs')
-    const path = require('path')
+    // Using dynamic imports in sync function
+    // eslint-disable-next-line ts/no-require-imports
+    const fs = require('node:fs')
+    // eslint-disable-next-line ts/no-require-imports
+    const path = require('node:path')
     const portFile = path.join('..', '.vscode_gateway_port')
-    
+
     if (fs.existsSync(portFile)) {
       const fileContent = fs.readFileSync(portFile, 'utf8').trim()
-      const filePort = parseInt(fileContent)
-      if (!isNaN(filePort) && filePort > 0 && filePort < 65536) {
+      const filePort = Number.parseInt(fileContent)
+      if (!Number.isNaN(filePort) && filePort > 0 && filePort < 65536) {
         console.error(`🔍 Using VSCode Gateway port ${filePort} from .vscode_gateway_port file`)
         return filePort
-      } else {
+      }
+      else {
         console.error(`⚠️  Invalid port in .vscode_gateway_port file: ${fileContent}`)
       }
     }
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error(`⚠️  Error reading .vscode_gateway_port file: ${error.message}`)
   }
-  
+
   // Fallback to environment variable
   if (process.env.GATEWAY_PORT) {
     const envPort = Number.parseInt(process.env.GATEWAY_PORT)
-    if (!isNaN(envPort)) {
+    if (!Number.isNaN(envPort)) {
       console.error(`🔍 Using VSCode Gateway port ${envPort} from GATEWAY_PORT environment variable`)
       return envPort
     }
   }
-  
+
   // Default fallback
   console.error(`🔍 Using default VSCode Gateway port 9600`)
   return 9600
@@ -85,7 +89,7 @@ async function startStdioServer() {
 
   // Register all tools with the MCP server
   await registerAllTools(mcpServer)
-  
+
   const tools = listAllTools()
   console.error(`📦 Registered ${tools.length} tools across all categories`)
   console.error('Tools by category:')
@@ -99,7 +103,7 @@ async function startStdioServer() {
 
   // Connect server to transport
   await mcpServer.connect(transport)
-  
+
   console.error('🚀 Token Saver MCP (stdio) server started')
   console.error('Ready to accept connections via stdio')
 }

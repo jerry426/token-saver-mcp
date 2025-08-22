@@ -107,7 +107,7 @@ async function testCDP() {
     console.log('✅ Connected to Chrome!\n')
 
     // Enable necessary domains
-    const { Runtime, Console, Page, Network, DOM } = client
+    const { Runtime, Console, Page } = client
     await Runtime.enable()
     await Console.enable()
     await Page.enable()

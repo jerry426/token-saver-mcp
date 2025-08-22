@@ -13,7 +13,7 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #6B5B95;  /* Solid color instead of gradient for better compression */
             min-height: 100vh;
             padding: 20px;
         }
@@ -28,20 +28,25 @@
             text-align: center;
             margin-bottom: 30px;
             font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            /* text-shadow removed for better compression */
         }
         
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto auto auto;
             gap: 20px;
+        }
+        
+        .card.full-width {
+            grid-column: 1 / -1;
         }
         
         .card {
             background: white;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;  /* Simple border instead of shadow */
             transition: transform 0.3s ease;
         }
         
@@ -53,7 +58,7 @@
             color: #333;
             margin-bottom: 15px;
             font-size: 1.3em;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 2px solid #6B5B95;
             padding-bottom: 10px;
         }
         
@@ -127,12 +132,12 @@
         }
         
         .log-method {
-            color: #667eea;
+            color: #6B5B95;
             font-weight: bold;
         }
         
         .refresh-btn {
-            background: #667eea;
+            background: #6B5B95;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -143,7 +148,7 @@
         }
         
         .refresh-btn:hover {
-            background: #5a67d8;
+            background: #5a4a8a;
         }
         
         .error-message {
@@ -156,9 +161,27 @@
         
         .tools-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(5, 1fr);
             gap: 10px;
             margin-top: 10px;
+        }
+        
+        @media (max-width: 1200px) {
+            .tools-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .tools-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .tools-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
         
         .tool-badge {
@@ -215,6 +238,7 @@
         <h1>🚀 Token Saver MCP Dashboard</h1>
         
         <div class="dashboard">
+            <!-- Top Row: Server Status | Request Metrics | Token Savings -->
             <!-- Server Status Card -->
             <div class="card">
                 <h2>Server Status</h2>
@@ -269,8 +293,34 @@
                 <button class="refresh-btn" onclick="refreshMetrics()">Refresh</button>
             </div>
             
-            <!-- Available Tools Card -->
+            <!-- Token Savings Card -->
             <div class="card">
+                <h2>Token Savings</h2>
+                <div class="metric">
+                    <span class="metric-label">Total Saved</span>
+                    <span class="metric-value" id="total-tokens-saved">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Avg per Request</span>
+                    <span class="metric-value" id="avg-tokens-saved">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Last 24h</span>
+                    <span class="metric-value" id="tokens-saved-24h">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Cost Saved</span>
+                    <span class="metric-value" id="cost-saved">$0.00</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Efficiency</span>
+                    <span class="metric-value" id="efficiency">100x</span>
+                </div>
+            </div>
+            
+            <!-- Middle Row: Available Tools (full-width) -->
+            <!-- Available Tools Card -->
+            <div class="card full-width">
                 <h2>Available Tools</h2>
                 <div class="metric">
                     <span class="metric-label">LSP Tools</span>
@@ -293,6 +343,7 @@
                 </div>
             </div>
             
+            <!-- Bottom Row: Recent Activity | Response Time Graph | Most Used Tools -->
             <!-- Recent Activity Card -->
             <div class="card">
                 <h2>Recent Activity</h2>
@@ -357,8 +408,10 @@
                 
                 data.tools.forEach(tool => {
                     const badge = document.createElement('div');
-                    badge.className = `tool-badge ${tool.category}`;
-                    badge.textContent = tool.name;
+                    badge.className = `tool-badge ${tool.displayCategory || tool.category}`;
+                    badge.textContent = tool.callCount > 0 
+                        ? `${tool.name} (${tool.callCount})`
+                        : tool.name;
                     toolsList.appendChild(badge);
                 });
                 
@@ -384,6 +437,23 @@
                 Math.round(data.avgResponseTime || 0) + 'ms';
             document.getElementById('active-connections').textContent = data.activeConnections || 0;
             document.getElementById('error-count').textContent = data.errorCount || 0;
+            
+            // Update token savings metrics
+            document.getElementById('total-tokens-saved').textContent = 
+                (data.totalTokensSaved || 0).toLocaleString();
+            document.getElementById('avg-tokens-saved').textContent = 
+                Math.round(data.avgTokensSaved || 0).toLocaleString();
+            document.getElementById('tokens-saved-24h').textContent = 
+                (data.tokensSaved24h || 0).toLocaleString();
+            
+            // Calculate cost saved (assuming $0.01 per 1000 tokens)
+            const costSaved = ((data.totalTokensSaved || 0) / 1000) * 0.01;
+            document.getElementById('cost-saved').textContent = 
+                '$' + costSaved.toFixed(2);
+            
+            // Calculate efficiency
+            const efficiency = data.efficiency || 100;
+            document.getElementById('efficiency').textContent = efficiency + 'x';
             
             // Update uptime
             const uptime = Date.now() - startTime;
@@ -481,7 +551,10 @@
             connectSSE();
             
             // Auto-refresh every 5 seconds
-            setInterval(fetchMetrics, 5000);
+            setInterval(() => {
+                fetchMetrics();
+                fetchTools();  // Also refresh tools to update call counts
+            }, 5000);
         });
     </script>
 </body>

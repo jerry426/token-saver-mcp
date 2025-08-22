@@ -2,8 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
-import { getDiagnostics } from '../lsp-implementations'
 import { bufferResponse } from '../../buffer-manager'
+import { getDiagnostics } from '../lsp-implementations'
 
 /**
  * Tool metadata for documentation generation
@@ -73,27 +73,27 @@ if (errors.length > 0) {
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
-  const handlerImpl = async ({ uri }) => {
-      const result = await getDiagnostics(uri)
+  const handlerImpl = async ({ uri }: { uri?: string }) => {
+    const result = await getDiagnostics(uri)
 
-      // Apply buffering if needed (diagnostics can be numerous across workspace)
-      const bufferedResponse = bufferResponse('get_diagnostics', result)
+    // Apply buffering if needed (diagnostics can be numerous across workspace)
+    const bufferedResponse = bufferResponse('get_diagnostics', result)
 
-      if (bufferedResponse.metadata) {
-        console.error(`[get_diagnostics] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              type: 'buffered_response',
-              ...bufferedResponse,
-            }, null, 2),
-          }],
-        }
+    if (bufferedResponse.metadata) {
+      console.error(`[get_diagnostics] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            type: 'buffered_response',
+            ...bufferedResponse,
+          }, null, 2),
+        }],
       }
-
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
     }
+
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+  }
   return handlerImpl(args)
 }
 

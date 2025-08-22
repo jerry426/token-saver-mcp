@@ -76,6 +76,6 @@ export function register(server: McpServer) {
       description: metadata.description,
       inputSchema: {},
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

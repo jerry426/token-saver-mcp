@@ -43,37 +43,32 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler(): Promise<any> {
-      // For standalone server, read the instructions from the local file system
-      try {
-        const fs = await import('fs/promises')
-        const path = await import('path')
-        const { fileURLToPath } = await import('url')
-        
-        // Get the directory of this file
-        const __filename = fileURLToPath(import.meta.url)
-        const __dirname = path.dirname(__filename)
-        
-        // Navigate to the README_USAGE_GUIDE.md file in the standalone-server directory
-        const instructionsPath = path.join(__dirname, '..', '..', 'README_USAGE_GUIDE.md')
-        
-        const instructions = await fs.readFile(instructionsPath, 'utf-8')
+  // For standalone server, read the instructions from the local file system
+  try {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    // Navigate to the README_USAGE_GUIDE.md file in the root directory
+    // Since we're in src/tools/system/, we need to go up 3 levels
+    const instructionsPath = path.join(__dirname, '..', '..', '..', '..', 'README_USAGE_GUIDE.md')
 
-        return {
-          content: [{
-            type: 'text',
-            text: instructions,
-          }],
-        }
-      }
-      catch (error) {
-        return {
-          content: [{
-            type: 'text',
-            text: `Error reading instructions file: ${error}`,
-          }],
-        }
-      }
+    const instructions = await fs.readFile(instructionsPath, 'utf-8')
+
+    return {
+      content: [{
+        type: 'text',
+        text: instructions,
+      }],
     }
+  }
+  catch (error) {
+    return {
+      content: [{
+        type: 'text',
+        text: `Error reading instructions file: ${error}`,
+      }],
+    }
+  }
+}
 
 export function register(server: McpServer) {
   server.registerTool(
@@ -83,6 +78,6 @@ export function register(server: McpServer) {
       description: metadata.description,
       inputSchema: {},
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

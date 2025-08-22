@@ -116,7 +116,7 @@ export async function searchText(query: string, options: any = {}) {
   // Use the findTextInFiles API through the workspace gateway
   const { getGatewayClient } = await import('../vscode-gateway-client')
   const client = getGatewayClient()
-  
+
   // Prepare the search query object for VSCode's findTextInFiles
   const searchQuery = {
     pattern: query,
@@ -124,14 +124,14 @@ export async function searchText(query: string, options: any = {}) {
     isCaseSensitive: options.isCaseSensitive || false,
     isWordMatch: options.matchWholeWord || false,
   }
-  
+
   // Prepare the search options
   const searchOptions: any = {
     maxResults: options.maxResults || 100,
     // Note: includes/excludes need special handling for glob patterns
     // We'll handle these on the gateway side if needed
   }
-  
+
   // Add include/exclude patterns if provided
   if (options.includes) {
     searchOptions.include = options.includes
@@ -139,7 +139,7 @@ export async function searchText(query: string, options: any = {}) {
   if (options.excludes) {
     searchOptions.exclude = options.excludes
   }
-  
+
   return client.workspaceApi('findTextInFiles', searchQuery, searchOptions)
 }
 
@@ -147,6 +147,6 @@ export async function searchSymbols(query: string) {
   // Use the workspace symbol provider for semantic symbol search
   return vscode.commands.executeCommand(
     'vscode.executeWorkspaceSymbolProvider',
-    query
+    query,
   )
 }

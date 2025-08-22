@@ -74,11 +74,11 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler({ url, triggerAction, waitBeforeTrigger = 1000 }: any): Promise<any> {
-      try {
-        const client = await ensureCDPConnection()
+  try {
+    const client = await ensureCDPConnection()
 
-        // Set up error capture before navigation
-        await client.execute(`
+    // Set up error capture before navigation
+    await client.execute(`
           window.__capturedErrors = [];
           window.__originalError = window.onerror;
           window.onerror = function(msg, source, lineno, colno, error) {
@@ -106,32 +106,32 @@ export async function handler({ url, triggerAction, waitBeforeTrigger = 1000 }: 
           });
         `)
 
-        await client.navigate(url)
-        await new Promise(resolve => setTimeout(resolve, waitBeforeTrigger))
+    await client.navigate(url)
+    await new Promise(resolve => setTimeout(resolve, waitBeforeTrigger))
 
-        // Clear console to capture fresh errors
-        client.clearConsoleMessages()
+    // Clear console to capture fresh errors
+    client.clearConsoleMessages()
 
-        // Trigger the error if action provided
-        if (triggerAction) {
-          try {
-            await client.execute(triggerAction)
-          }
-          catch (triggerError: any) {
-            // This is expected - we're triggering an error
-            logger.info('Trigger resulted in error (expected):', triggerError.message)
-          }
-        }
+    // Trigger the error if action provided
+    if (triggerAction) {
+      try {
+        await client.execute(triggerAction)
+      }
+      catch (triggerError: any) {
+        // This is expected - we're triggering an error
+        logger.info('Trigger resulted in error (expected):', triggerError.message)
+      }
+    }
 
-        // Wait for errors to be captured
-        await new Promise(resolve => setTimeout(resolve, 500))
+    // Wait for errors to be captured
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-        // Collect all errors
-        const capturedErrors = await client.execute('window.__capturedErrors || []')
-        const consoleErrors = client.getConsoleMessages('error')
+    // Collect all errors
+    const capturedErrors = await client.execute('window.__capturedErrors || []')
+    const consoleErrors = client.getConsoleMessages('error')
 
-        // Analyze errors
-        const analysis = await client.execute(`
+    // Analyze errors
+    const analysis = await client.execute(`
           (() => {
             const errors = window.__capturedErrors || [];
             const analysis = {
@@ -194,47 +194,47 @@ export async function handler({ url, triggerAction, waitBeforeTrigger = 1000 }: 
           })()
         `)
 
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: true,
-              errors: {
-                captured: capturedErrors,
-                console: consoleErrors.map((e: any) => ({
-                  text: e.text,
-                  url: e.url,
-                  line: e.line,
-                })),
-                total: capturedErrors.length + consoleErrors.length,
-              },
-              analysis: analysis.analysis,
-              environment: {
-                framework: analysis.framework,
-                debugging: analysis.debugging,
-              },
-              recommendations: [
-                ...analysis.analysis.suggestions,
-                capturedErrors.length > 5 ? 'Multiple errors detected - check initialization order' : null,
-                analysis.debugging.hasSourceMaps ? null : 'Enable source maps for better debugging',
-              ].filter(Boolean),
-            }, null, 2),
-          }],
-        }
-      }
-      catch (error: any) {
-        logger.error('Failed to debug JavaScript error:', error)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: error.message,
-            }, null, 2),
-          }],
-        }
-      }
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: true,
+          errors: {
+            captured: capturedErrors,
+            console: consoleErrors.map((e: any) => ({
+              text: e.text,
+              url: e.url,
+              line: e.line,
+            })),
+            total: capturedErrors.length + consoleErrors.length,
+          },
+          analysis: analysis.analysis,
+          environment: {
+            framework: analysis.framework,
+            debugging: analysis.debugging,
+          },
+          recommendations: [
+            ...analysis.analysis.suggestions,
+            capturedErrors.length > 5 ? 'Multiple errors detected - check initialization order' : null,
+            analysis.debugging.hasSourceMaps ? null : 'Enable source maps for better debugging',
+          ].filter(Boolean),
+        }, null, 2),
+      }],
     }
+  }
+  catch (error: any) {
+    logger.error('Failed to debug JavaScript error:', error)
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: false,
+          error: error.message,
+        }, null, 2),
+      }],
+    }
+  }
+}
 
 export function register(server: McpServer) {
   server.registerTool(
@@ -248,6 +248,6 @@ export function register(server: McpServer) {
         waitBeforeTrigger: z.number().optional().describe('Wait time before trigger (ms)'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

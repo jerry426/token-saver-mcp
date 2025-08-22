@@ -1,16 +1,15 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import cors from 'cors'
 import express from 'express'
-import fs from 'fs'
-import path from 'path'
-import { getAllToolMetadata, getToolByName, getToolsByCategory, listAllTools } from './tools/index'
+import { handleHttpMcpRequest } from './mcp-http'
+import { dashboardClients, getMetricsData, metrics, trackError, trackToolCall } from './metrics'
+import { getAllToolMetadata, getToolByName, getToolsByCategory, listAllTools, registerAllTools } from './tools/index'
 import { initializeVSCodeAdapter } from './vscode-adapter'
 import { getGatewayClient } from './vscode-gateway-client'
-import { registerAllTools } from './tools/index'
-import { dashboardClients, getMetricsData, trackError, trackToolCall } from './metrics'
-import { handleHttpMcpRequest } from './mcp-http'
 
 // Read MCP port from file if it exists, otherwise use environment or default
 function getMcpPort(): number {
@@ -18,20 +17,21 @@ function getMcpPort(): number {
   if (process.env.MCP_PORT) {
     return Number.parseInt(process.env.MCP_PORT)
   }
-  
+
   // Try to read from .mcp_server_port file
   try {
     const portFilePath = path.join(process.cwd(), '..', '.mcp_server_port')
     const portContent = fs.readFileSync(portFilePath, 'utf-8').trim()
     const port = Number.parseInt(portContent)
-    if (!isNaN(port) && port > 0 && port < 65536) {
+    if (!Number.isNaN(port) && port > 0 && port < 65536) {
       console.log(`📁 Read MCP port ${port} from .mcp_server_port file`)
       return port
     }
-  } catch (error) {
+  }
+  catch (error) {
     // File doesn't exist or can't be read, use default
   }
-  
+
   // Default port
   return 9700
 }
@@ -41,35 +41,40 @@ function getGatewayPort(): number {
   // 1. .vscode_gateway_port file (set by VSCode extension)
   // 2. GATEWAY_PORT environment variable
   // 3. Default 9600
-  
+
   try {
-    const fs = require('fs')
-    const path = require('path')
+    // Using dynamic imports in sync function
+    // eslint-disable-next-line ts/no-require-imports
+    const fs = require('node:fs')
+    // eslint-disable-next-line ts/no-require-imports
+    const path = require('node:path')
     const portFile = path.join('..', '.vscode_gateway_port')
-    
+
     if (fs.existsSync(portFile)) {
       const fileContent = fs.readFileSync(portFile, 'utf8').trim()
-      const filePort = parseInt(fileContent)
-      if (!isNaN(filePort) && filePort > 0 && filePort < 65536) {
+      const filePort = Number.parseInt(fileContent)
+      if (!Number.isNaN(filePort) && filePort > 0 && filePort < 65536) {
         console.log(`🔍 Using VSCode Gateway port ${filePort} from .vscode_gateway_port file`)
         return filePort
-      } else {
+      }
+      else {
         console.warn(`⚠️  Invalid port in .vscode_gateway_port file: ${fileContent}`)
       }
     }
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.warn(`⚠️  Error reading .vscode_gateway_port file: ${error.message}`)
   }
-  
+
   // Fallback to environment variable
   if (process.env.GATEWAY_PORT) {
     const envPort = Number.parseInt(process.env.GATEWAY_PORT)
-    if (!isNaN(envPort)) {
+    if (!Number.isNaN(envPort)) {
       console.log(`🔍 Using VSCode Gateway port ${envPort} from GATEWAY_PORT environment variable`)
       return envPort
     }
   }
-  
+
   // Default fallback
   console.log(`🔍 Using default VSCode Gateway port 9600`)
   return 9600
@@ -97,7 +102,6 @@ export function getSingletonServer(): McpServer | null {
 }
 
 async function startServer() {
-  
   // First, check if the VSCode gateway is available
   const gateway = getGatewayClient(GATEWAY_PORT)
 
@@ -129,7 +133,7 @@ async function startServer() {
   // Create Express app for REST API
   const app = express()
   app.use(cors())
-  
+
   // Add request logging to debug Claude connection attempts
   app.use((req, res, next) => {
     if (req.path === '/mcp') {
@@ -138,7 +142,7 @@ async function startServer() {
     }
     next()
   })
-  
+
   app.use(express.json({ limit: '50mb' }))
 
   // Health check
@@ -185,16 +189,21 @@ async function startServer() {
     // Get all tools from the modular system
     const modularTools = getAllToolMetadata()
     
-    // Group by category
+    // Get metrics data which includes tool usage
+    const metricsData = getMetricsData()
+
+    // Group by category and add call counts
     const tools = modularTools.map(tool => ({
       name: tool.name,
       description: tool.description,
-      category: tool.category === 'helper' ? 'cdp' : tool.category // Helper tools show as CDP
+      category: tool.category, // Keep original category
+      displayCategory: tool.category === 'helper' ? 'cdp' : tool.category, // For display badges
+      callCount: metrics.toolUsage.get(tool.name) || 0,
     }))
-    
+
     res.json({
       tools,
-      totalTokensSaved: getMetricsData().totalTokensSaved,
+      totalTokensSaved: metricsData.totalTokensSaved,
     })
   })
 
@@ -244,22 +253,22 @@ async function startServer() {
         try {
           // Track timing
           const startTime = Date.now()
-          
+
           // Call the tool handler with the arguments
           const result = await tool.handler(args)
-          
+
           // Track successful call
           const responseTime = Date.now() - startTime
           trackToolCall(name, responseTime)
-          
+
           res.json({ success: true, result })
         }
         catch (toolError: any) {
           console.error(`Error executing tool ${name}:`, toolError)
-          
+
           // Track error
           trackError(name)
-          
+
           res.status(500).json({
             error: toolError.message,
             tool: name,
@@ -332,11 +341,11 @@ async function startServer() {
         else {
           // Singleton already exists - return cached initialization
           console.warn('Reusing existing singleton for initialize request')
-          
+
           res.setHeader('Content-Type', 'text/event-stream')
           res.setHeader('Cache-Control', 'no-cache')
           res.setHeader('Connection', 'keep-alive')
-          
+
           const initResponse = {
             jsonrpc: '2.0',
             id: (req.body as any).id || 1,
@@ -351,7 +360,7 @@ async function startServer() {
               },
             },
           }
-          
+
           res.write(`event: message\ndata: ${JSON.stringify(initResponse)}\n\n`)
           res.end()
           return
@@ -425,19 +434,18 @@ async function startServer() {
     console.log(`   Tools: All ${getAllToolMetadata().length} tools loaded successfully`)
     console.log('\n📝 Development mode: Changes will hot-reload automatically')
   })
-  
+
   server.on('error', (err: any) => {
     if (err.code === 'EADDRINUSE') {
       console.error(`Port ${MCP_PORT} is already in use`)
       process.exit(1)
-    } else {
+    }
+    else {
       console.error(`Server error:`, err)
       process.exit(1)
     }
   })
-
 }
-
 
 // Start the server
 startServer().catch((error) => {

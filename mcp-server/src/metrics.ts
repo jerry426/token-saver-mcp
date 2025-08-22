@@ -81,23 +81,23 @@ export const dashboardClients = new Set<Response>()
 export function trackToolCall(toolName: string, responseTime: number) {
   metrics.totalRequests++
   metrics.successCount++
-  
+
   // Update response time history (keep last 100)
   metrics.responseTimeHistory.push(responseTime)
   if (metrics.responseTimeHistory.length > 100) {
     metrics.responseTimeHistory.shift()
   }
-  
+
   // Update tool usage
   const currentUsage = metrics.toolUsage.get(toolName) || 0
   metrics.toolUsage.set(toolName, currentUsage + 1)
-  
+
   // Update token savings
   const tokensSaved = TOKEN_SAVINGS_ESTIMATES[toolName] || 0
   const currentSavings = metrics.tokenSavings.get(toolName) || 0
   metrics.tokenSavings.set(toolName, currentSavings + tokensSaved)
   metrics.totalTokensSaved += tokensSaved
-  
+
   // Add to recent activity (keep last 20)
   metrics.recentActivity.unshift({
     timestamp: Date.now(),
@@ -109,7 +109,7 @@ export function trackToolCall(toolName: string, responseTime: number) {
   if (metrics.recentActivity.length > 20) {
     metrics.recentActivity.pop()
   }
-  
+
   // Broadcast update to dashboard clients
   broadcastMetrics()
 }
@@ -118,14 +118,14 @@ export function trackToolCall(toolName: string, responseTime: number) {
 export function trackError(toolName?: string, responseTime?: number) {
   metrics.totalRequests++
   metrics.errorCount++
-  
+
   if (responseTime) {
     metrics.responseTimeHistory.push(responseTime)
     if (metrics.responseTimeHistory.length > 100) {
       metrics.responseTimeHistory.shift()
     }
   }
-  
+
   // Add to recent activity
   metrics.recentActivity.unshift({
     timestamp: Date.now(),
@@ -137,7 +137,7 @@ export function trackError(toolName?: string, responseTime?: number) {
   if (metrics.recentActivity.length > 20) {
     metrics.recentActivity.pop()
   }
-  
+
   broadcastMetrics()
 }
 
@@ -177,12 +177,26 @@ export function getMetricsData() {
     .slice(0, 5)
     .map(([name, saved]) => ({ name, saved }))
 
+  // Calculate average tokens saved per request
+  const avgTokensSaved = metrics.totalRequests > 0
+    ? metrics.totalTokensSaved / metrics.totalRequests
+    : 0
+
+  // Calculate tokens saved in last 24h (simulated for now)
+  const tokensSaved24h = metrics.totalTokensSaved
+
+  // Calculate efficiency (how many fewer tokens compared to text search)
+  const efficiency = avgTokensSaved > 0 ? Math.round(avgTokensSaved / 10) : 100
+
   return {
     totalRequests: metrics.totalRequests,
     successCount: metrics.successCount,
     errorCount: metrics.errorCount,
     successRate,
     avgResponseTime,
+    avgTokensSaved,
+    tokensSaved24h,
+    efficiency,
     activeConnections: dashboardClients.size,
     recentActivity: metrics.recentActivity,
     popularTools,

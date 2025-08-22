@@ -4,10 +4,10 @@
  */
 
 // For STDIO server, all logging must go to stderr to avoid corrupting the JSON-RPC protocol
-const logger = { 
-  info: console.error, 
-  error: console.error, 
-  warn: console.error 
+const logger = {
+  info: console.error,
+  error: console.error,
+  warn: console.error,
 }
 
 export interface BufferedResponse {
@@ -391,7 +391,7 @@ function generateSmartPreview(
       topSuggestions: items.slice(0, maxItems).map((item: any) => ({
         label: item.label,
         kind: kindNames[item.kind] || 'Other',
-        detail: item.detail?.substring(0, 50) // Truncate detail
+        detail: item.detail?.substring(0, 50), // Truncate detail
       })),
     }
 
@@ -520,16 +520,16 @@ export function bufferResponse(
   // Create smart preview for buffered response
   // Use tool-specific preview sizes that balance usefulness with token conservation
   const PREVIEW_SIZES: { [key: string]: number } = {
-    'get_completions': 20,     // Show 20 completions - enough to be useful
-    'get_references': 15,      // Show 15 references - good overview
-    'get_diagnostics': 25,     // Show 25 diagnostics - catch main issues
-    'get_document_symbols': 15, // Show 15 symbols - file structure
-    'find_text': 10,           // Show 10 search results
-    'find_symbols': 10,        // Show 10 symbol results
-    'get_hover': 5,            // Hover is usually small anyway
-    'get_semantic_tokens': 5,  // Token arrays are hard to preview
+    get_completions: 20, // Show 20 completions - enough to be useful
+    get_references: 15, // Show 15 references - good overview
+    get_diagnostics: 25, // Show 25 diagnostics - catch main issues
+    get_document_symbols: 15, // Show 15 symbols - file structure
+    find_text: 10, // Show 10 search results
+    find_symbols: 10, // Show 10 symbol results
+    get_hover: 5, // Hover is usually small anyway
+    get_semantic_tokens: 5, // Token arrays are hard to preview
   }
-  
+
   const targetPreviewSize = PREVIEW_SIZES[toolName] || 10
   const preview = generateSmartPreview(processedData, toolName, targetPreviewSize)
 
@@ -654,22 +654,22 @@ export function getBufferStats(): {
   activeBuffers: number
   totalSize: number
   oldestBuffer: number | null
-  buffers: Array<{ id: string; toolName: string; itemCount: number; age: string }>
+  buffers: Array<{ id: string, toolName: string, itemCount: number, age: string }>
 } {
   let totalSize = 0
   let oldestTimestamp: number | null = null
-  const buffers: Array<{ id: string; toolName: string; itemCount: number; age: string }> = []
+  const buffers: Array<{ id: string, toolName: string, itemCount: number, age: string }> = []
 
   for (const [id, buffer] of responseBuffers.entries()) {
     totalSize += buffer.metadata.totalBytes
     if (!oldestTimestamp || buffer.timestamp < oldestTimestamp) {
       oldestTimestamp = buffer.timestamp
     }
-    
+
     // Extract tool name from buffer ID
     const toolName = id.split('_')[0]
     const age = Math.floor((Date.now() - buffer.timestamp) / 1000)
-    
+
     buffers.push({
       id,
       toolName,

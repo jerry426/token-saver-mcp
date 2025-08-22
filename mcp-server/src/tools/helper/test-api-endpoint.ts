@@ -73,13 +73,13 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler({ url, endpoint, method = 'GET', body, headers }: any): Promise<any> {
-      try {
-        const client = await ensureCDPConnection()
+  try {
+    const client = await ensureCDPConnection()
 
-        await client.navigate(url)
-        await new Promise(resolve => setTimeout(resolve, 500))
+    await client.navigate(url)
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-        const result = await client.execute(`
+    const result = await client.execute(`
           (async () => {
             const startTime = performance.now();
             const apiUrl = new URL('${endpoint}', window.location.origin).toString();
@@ -135,31 +135,31 @@ export async function handler({ url, endpoint, method = 'GET', body, headers }: 
           })()
         `)
 
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: !result.error,
-              endpoint,
-              method,
-              ...result,
-            }, null, 2),
-          }],
-        }
-      }
-      catch (error: any) {
-        logger.error('Failed to test API endpoint:', error)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: error.message,
-            }, null, 2),
-          }],
-        }
-      }
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: !result.error,
+          endpoint,
+          method,
+          ...result,
+        }, null, 2),
+      }],
     }
+  }
+  catch (error: any) {
+    logger.error('Failed to test API endpoint:', error)
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: false,
+          error: error.message,
+        }, null, 2),
+      }],
+    }
+  }
+}
 
 export function register(server: McpServer) {
   server.registerTool(
@@ -175,6 +175,6 @@ export function register(server: McpServer) {
         headers: z.record(z.string()).optional().describe('Additional headers'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

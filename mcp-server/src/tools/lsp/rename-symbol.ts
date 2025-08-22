@@ -82,25 +82,25 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
-  const handlerImpl = async ({ uri, line, character, newName }) => {
-      const result = await renameSymbol(uri, line, character, newName)
+  const handlerImpl = async ({ uri, line, character, newName }: { uri: string, line: number, character: number, newName: string }) => {
+    const result = await renameSymbol(uri, line, character, newName)
 
-      if (!result) {
-        return {
-          content: [{
-            type: 'text',
-            text: 'Rename operation failed. The symbol may not support renaming or the new name is invalid.',
-          }],
-        }
-      }
-
+    if (!result) {
       return {
         content: [{
           type: 'text',
-          text: JSON.stringify(result),
+          text: 'Rename operation failed. The symbol may not support renaming or the new name is invalid.',
         }],
       }
     }
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(result),
+      }],
+    }
+  }
   return handlerImpl(args)
 }
 

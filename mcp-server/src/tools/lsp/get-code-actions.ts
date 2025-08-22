@@ -3,7 +3,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { getCodeActions } from '../lsp-implementations'
-import { bufferResponse } from '../../buffer-manager'
 
 /**
  * Tool metadata for documentation generation
@@ -79,25 +78,25 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
-  const handlerImpl = async ({ uri, line, character }) => {
-      const result = await getCodeActions(uri, line, character)
+  const handlerImpl = async ({ uri, line, character }: { uri: string, line: number, character: number }) => {
+    const result = await getCodeActions(uri, line, character)
 
-      if (!result || result.length === 0) {
-        return {
-          content: [{
-            type: 'text',
-            text: 'No code actions available at the specified position.',
-          }],
-        }
-      }
-
+    if (!result || result.length === 0) {
       return {
         content: [{
           type: 'text',
-          text: JSON.stringify(result, null, 2),
+          text: 'No code actions available at the specified position.',
         }],
       }
     }
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(result, null, 2),
+      }],
+    }
+  }
   return handlerImpl(args)
 }
 

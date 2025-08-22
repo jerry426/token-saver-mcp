@@ -2,8 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
-import { getReferences } from '../lsp-implementations'
 import { bufferResponse } from '../../buffer-manager'
+import { getReferences } from '../lsp-implementations'
 
 /**
  * Tool metadata for documentation generation
@@ -80,27 +80,27 @@ const refs = get_references({
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
-  const handlerImpl = async ({ uri, line, character }) => {
-      const result = await getReferences(uri, line, character)
+  const handlerImpl = async ({ uri, line, character }: { uri: string, line: number, character: number }) => {
+    const result = await getReferences(uri, line, character)
 
-      // Apply buffering if needed (references can be numerous)
-      const bufferedResponse = bufferResponse('get_references', result)
+    // Apply buffering if needed (references can be numerous)
+    const bufferedResponse = bufferResponse('get_references', result)
 
-      if (bufferedResponse.metadata) {
-        console.error(`[get_references] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              type: 'buffered_response',
-              ...bufferedResponse,
-            }, null, 2),
-          }],
-        }
+    if (bufferedResponse.metadata) {
+      console.error(`[get_references] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            type: 'buffered_response',
+            ...bufferedResponse,
+          }, null, 2),
+        }],
       }
-
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
     }
+
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+  }
   return handlerImpl(args)
 }
 

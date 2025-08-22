@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
-import { z } from 'zod'
 import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
 import * as path from 'node:path'
+import { promisify } from 'node:util'
+import { z } from 'zod'
 
 const execAsync = promisify(exec)
 
@@ -97,147 +97,152 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler({ query, useRegExp, isCaseSensitive, matchWholeWord, maxResults = 20, includes, excludes, includeContext = 0 }: any): Promise<any> {
-      try {
-        // Build ripgrep command
-        let rgCommand = 'rg'
-        
-        // Add flags
-        if (!isCaseSensitive) rgCommand += ' -i'
-        if (matchWholeWord) rgCommand += ' -w'
-        if (!useRegExp) rgCommand += ' -F'
-        if (includeContext > 0) rgCommand += ` -C ${includeContext}`
-        
-        // Add JSON output for easier parsing
-        rgCommand += ' --json'
-        
-        // Add includes
-        if (includes && includes.length > 0) {
-          for (const pattern of includes) {
-            rgCommand += ` -g "${pattern}"`
-          }
-        }
-        
-        // Add excludes (with defaults)
-        const defaultExcludes = ['node_modules', '.git', 'dist', 'build', '*.min.js']
-        const allExcludes = excludes ? [...defaultExcludes, ...excludes] : defaultExcludes
-        for (const pattern of allExcludes) {
-          rgCommand += ` -g "!${pattern}"`
-        }
-        
-        // Add the search query (properly escaped)
-        const escapedQuery = useRegExp ? query : query.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
-        rgCommand += ` "${escapedQuery}"`
-        
-        // Get workspace root (fallback to current directory)
-        const workspaceRoot = process.cwd()
-        rgCommand += ` "${workspaceRoot}"`
-        
-        // Execute ripgrep
-        const { stdout } = await execAsync(rgCommand, { maxBuffer: 50 * 1024 * 1024 }) // 50MB buffer
-        
-        // Parse JSON output from ripgrep
-        const lines = stdout.trim().split('\n').filter(line => line)
-        const matches: any[] = []
-        let currentFile = ''
-        
-        for (const line of lines) {
-          try {
-            const json = JSON.parse(line)
-            if (json.type === 'match') {
-              const filePath = json.data.path.text
-              const lineNumber = json.data.line_number
-              const lineText = json.data.lines.text.trim()
-              
-              matches.push({
-                file: path.basename(filePath),
-                path: filePath,
-                line: lineNumber,
-                text: lineText,
-                column: json.data.submatches?.[0]?.start || 0,
-              })
-            }
-          } catch {
-            // Skip non-JSON lines
-          }
-        }
-        
-        // Handle no results
-        if (matches.length === 0) {
-          return {
-            content: [{
-              type: 'text',
-              text: `No matches found for "${query}"`
-            }]
-          }
-        }
-        
-        // Check if we need to buffer
-        if (matches.length > maxResults) {
-          // Generate buffer ID
-          const bufferId = `text_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-          
-          // Store full results in buffer
-          resultBuffers.set(bufferId, {
-            data: matches,
-            timestamp: Date.now(),
-            query: query,
-          })
-          
-          // Count unique files
-          const uniqueFiles = new Set(matches.map(m => m.path)).size
-          
-          // Return summary with first N results
-          return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify({
-                summary: `Found ${matches.length} matches in ${uniqueFiles} files`,
-                bufferId: bufferId,
-                bufferNotice: `Showing first ${maxResults} results. Use retrieve_buffer("${bufferId}") for all results.`,
-                results: matches.slice(0, maxResults),
-              }, null, 2)
-            }]
-          }
-        }
-        
-        // Return all results if under limit
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(matches, null, 2)
-          }]
-        }
-        
-      } catch (error: any) {
-        // Handle ripgrep not installed
-        if (error.message.includes('command not found') || error.message.includes('not recognized')) {
-          return {
-            content: [{
-              type: 'text',
-              text: 'Error: ripgrep (rg) is not installed. Please install it to use text search.'
-            }]
-          }
-        }
-        
-        // Handle no matches (ripgrep returns exit code 1)
-        if (error.code === 1 && error.stdout === '') {
-          return {
-            content: [{
-              type: 'text',
-              text: `No matches found for "${query}"`
-            }]
-          }
-        }
-        
-        // Other errors
-        return {
-          content: [{
-            type: 'text',
-            text: `Error searching: ${error.message}`
-          }]
-        }
+  try {
+    // Build ripgrep command
+    let rgCommand = 'rg'
+
+    // Add flags
+    if (!isCaseSensitive)
+      rgCommand += ' -i'
+    if (matchWholeWord)
+      rgCommand += ' -w'
+    if (!useRegExp)
+      rgCommand += ' -F'
+    if (includeContext > 0)
+      rgCommand += ` -C ${includeContext}`
+
+    // Add JSON output for easier parsing
+    rgCommand += ' --json'
+
+    // Add includes
+    if (includes && includes.length > 0) {
+      for (const pattern of includes) {
+        rgCommand += ` -g "${pattern}"`
       }
     }
+
+    // Add excludes (with defaults)
+    const defaultExcludes = ['node_modules', '.git', 'dist', 'build', '*.min.js']
+    const allExcludes = excludes ? [...defaultExcludes, ...excludes] : defaultExcludes
+    for (const pattern of allExcludes) {
+      rgCommand += ` -g "!${pattern}"`
+    }
+
+    // Add the search query (properly escaped)
+    const escapedQuery = useRegExp ? query : query.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
+    rgCommand += ` "${escapedQuery}"`
+
+    // Get workspace root (fallback to current directory)
+    const workspaceRoot = process.cwd()
+    rgCommand += ` "${workspaceRoot}"`
+
+    // Execute ripgrep
+    const { stdout } = await execAsync(rgCommand, { maxBuffer: 50 * 1024 * 1024 }) // 50MB buffer
+
+    // Parse JSON output from ripgrep
+    const lines = stdout.trim().split('\n').filter(line => line)
+    const matches: any[] = []
+    const currentFile = ''
+
+    for (const line of lines) {
+      try {
+        const json = JSON.parse(line)
+        if (json.type === 'match') {
+          const filePath = json.data.path.text
+          const lineNumber = json.data.line_number
+          const lineText = json.data.lines.text.trim()
+
+          matches.push({
+            file: path.basename(filePath),
+            path: filePath,
+            line: lineNumber,
+            text: lineText,
+            column: json.data.submatches?.[0]?.start || 0,
+          })
+        }
+      }
+      catch {
+        // Skip non-JSON lines
+      }
+    }
+
+    // Handle no results
+    if (matches.length === 0) {
+      return {
+        content: [{
+          type: 'text',
+          text: `No matches found for "${query}"`,
+        }],
+      }
+    }
+
+    // Check if we need to buffer
+    if (matches.length > maxResults) {
+      // Generate buffer ID
+      const bufferId = `text_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+      // Store full results in buffer
+      resultBuffers.set(bufferId, {
+        data: matches,
+        timestamp: Date.now(),
+        query,
+      })
+
+      // Count unique files
+      const uniqueFiles = new Set(matches.map(m => m.path)).size
+
+      // Return summary with first N results
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            summary: `Found ${matches.length} matches in ${uniqueFiles} files`,
+            bufferId,
+            bufferNotice: `Showing first ${maxResults} results. Use retrieve_buffer("${bufferId}") for all results.`,
+            results: matches.slice(0, maxResults),
+          }, null, 2),
+        }],
+      }
+    }
+
+    // Return all results if under limit
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(matches, null, 2),
+      }],
+    }
+  }
+  catch (error: any) {
+    // Handle ripgrep not installed
+    if (error.message.includes('command not found') || error.message.includes('not recognized')) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'Error: ripgrep (rg) is not installed. Please install it to use text search.',
+        }],
+      }
+    }
+
+    // Handle no matches (ripgrep returns exit code 1)
+    if (error.code === 1 && error.stdout === '') {
+      return {
+        content: [{
+          type: 'text',
+          text: `No matches found for "${query}"`,
+        }],
+      }
+    }
+
+    // Other errors
+    return {
+      content: [{
+        type: 'text',
+        text: `Error searching: ${error.message}`,
+      }],
+    }
+  }
+}
 
 // Tool registration function
 export function register(server: McpServer) {
@@ -257,7 +262,7 @@ export function register(server: McpServer) {
         includeContext: z.number().optional().describe(metadata.docs.parameters?.includeContext || ''),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }
 
@@ -271,7 +276,7 @@ export function getBufferStats() {
     id,
     query: buffer.query,
     resultCount: buffer.data.length,
-    age: Math.floor((Date.now() - buffer.timestamp) / 1000) + 's',
+    age: `${Math.floor((Date.now() - buffer.timestamp) / 1000)}s`,
   }))
   return stats
 }

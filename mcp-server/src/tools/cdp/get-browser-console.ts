@@ -86,6 +86,6 @@ export function register(server: McpServer) {
         clear: z.boolean().optional().describe(metadata.docs.parameters?.clear || 'Clear console messages after retrieving (default: false)'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

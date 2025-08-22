@@ -68,19 +68,19 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler({ url, componentName, waitForSelector }: any): Promise<any> {
-      try {
-        const client = await ensureCDPConnection()
+  try {
+    const client = await ensureCDPConnection()
 
-        await client.navigate(url)
+    await client.navigate(url)
 
-        if (waitForSelector) {
-          await client.waitForSelector(waitForSelector)
-        }
+    if (waitForSelector) {
+      await client.waitForSelector(waitForSelector)
+    }
 
-        // Wait for React to mount
-        await new Promise(resolve => setTimeout(resolve, 1000))
+    // Wait for React to mount
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-        const result = await client.execute(`
+    const result = await client.execute(`
           (() => {
             // Check if React DevTools is available
             const hasReactDevTools = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== undefined;
@@ -114,34 +114,34 @@ export async function handler({ url, componentName, waitForSelector }: any): Pro
           })()
         `)
 
-        // Also capture any console errors
-        const consoleMessages = client.getConsoleMessages('error')
+    // Also capture any console errors
+    const consoleMessages = client.getConsoleMessages('error')
 
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: true,
-              component: componentName,
-              ...result,
-              consoleErrors: consoleMessages.map((m: any) => m.text),
-            }, null, 2),
-          }],
-        }
-      }
-      catch (error: any) {
-        logger.error('Failed to test React component:', error)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: error.message,
-            }, null, 2),
-          }],
-        }
-      }
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: true,
+          component: componentName,
+          ...result,
+          consoleErrors: consoleMessages.map((m: any) => m.text),
+        }, null, 2),
+      }],
     }
+  }
+  catch (error: any) {
+    logger.error('Failed to test React component:', error)
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: false,
+          error: error.message,
+        }, null, 2),
+      }],
+    }
+  }
+}
 
 export function register(server: McpServer) {
   server.registerTool(
@@ -155,6 +155,6 @@ export function register(server: McpServer) {
         waitForSelector: z.string().optional().describe('CSS selector to wait for before testing'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

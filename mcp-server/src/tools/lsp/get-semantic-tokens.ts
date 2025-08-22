@@ -2,8 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
-import { getSemanticTokens } from '../lsp-implementations'
 import { bufferResponse } from '../../buffer-manager'
+import { getSemanticTokens } from '../lsp-implementations'
 
 /**
  * Tool metadata for documentation generation
@@ -72,27 +72,27 @@ const tokens = get_semantic_tokens({
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
-  const handlerImpl = async ({ uri }) => {
-      const result = await getSemanticTokens(uri)
+  const handlerImpl = async ({ uri }: { uri: string }) => {
+    const result = await getSemanticTokens(uri)
 
-      // Apply buffering if needed (semantic tokens can be huge for large files)
-      const bufferedResponse = bufferResponse('get_semantic_tokens', result)
+    // Apply buffering if needed (semantic tokens can be huge for large files)
+    const bufferedResponse = bufferResponse('get_semantic_tokens', result)
 
-      if (bufferedResponse.metadata) {
-        console.error(`[get_semantic_tokens] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              type: 'buffered_response',
-              ...bufferedResponse,
-            }, null, 2),
-          }],
-        }
+    if (bufferedResponse.metadata) {
+      console.error(`[get_semantic_tokens] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            type: 'buffered_response',
+            ...bufferedResponse,
+          }, null, 2),
+        }],
       }
-
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
     }
+
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+  }
   return handlerImpl(args)
 }
 

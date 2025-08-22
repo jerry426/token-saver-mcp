@@ -46,10 +46,10 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler(): Promise<any> {
-      // Placeholder implementation - actual data would come from VSCode
-      const result = { languages: [], categories: {} }
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
-    }
+  // Placeholder implementation - actual data would come from VSCode
+  const result = { languages: [], categories: {} }
+  return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+}
 
 export function register(server: McpServer) {
   server.registerTool(
@@ -59,6 +59,6 @@ export function register(server: McpServer) {
       description: metadata.description,
       inputSchema: {},
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

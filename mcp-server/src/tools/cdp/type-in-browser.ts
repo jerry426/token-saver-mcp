@@ -95,6 +95,6 @@ export function register(server: McpServer) {
         text: z.string().describe(metadata.docs.parameters?.text || 'Text to type into the input field'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

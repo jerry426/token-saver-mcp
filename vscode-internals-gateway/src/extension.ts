@@ -305,36 +305,37 @@ export function activate(context: vscode.ExtensionContext) {
           // Handle the callback-based findTextInFiles API
           const [searchQuery, searchOptions = {}] = args
           const searchResults: any[] = []
-          
+
           // Process include/exclude patterns
           const processedOptions: any = {
             maxResults: searchOptions.maxResults || 100,
           }
-          
+
           // Handle include patterns
           if (searchOptions.include && vscode.workspace.workspaceFolders?.[0]) {
-            const patterns = Array.isArray(searchOptions.include) 
-              ? searchOptions.include 
+            const patterns = Array.isArray(searchOptions.include)
+              ? searchOptions.include
               : [searchOptions.include]
             processedOptions.include = new vscode.RelativePattern(
               vscode.workspace.workspaceFolders[0],
-              patterns.length > 1 ? `{${patterns.join(',')}}` : patterns[0]
+              patterns.length > 1 ? `{${patterns.join(',')}}` : patterns[0],
             )
           }
-          
-          // Handle exclude patterns  
+
+          // Handle exclude patterns
           if (searchOptions.exclude) {
             const patterns = Array.isArray(searchOptions.exclude)
               ? searchOptions.exclude
               : [searchOptions.exclude]
-            processedOptions.exclude = patterns.length > 1 
-              ? `{${patterns.join(',')}}` 
+            processedOptions.exclude = patterns.length > 1
+              ? `{${patterns.join(',')}}`
               : patterns[0]
-          } else {
+          }
+          else {
             // Default excludes
             processedOptions.exclude = '**/node_modules/**'
           }
-          
+
           // Create a promise that collects all results
           await new Promise<void>((resolve, reject) => {
             try {
@@ -343,7 +344,7 @@ export function activate(context: vscode.ExtensionContext) {
                 resolve()
                 return
               }
-              
+
               // @ts-ignore
               vscode.workspace.findTextInFiles(
                 searchQuery,
@@ -362,16 +363,17 @@ export function activate(context: vscode.ExtensionContext) {
                   }
                 },
                 // Token for cancellation (not used here)
-                undefined
+                undefined,
               ).then(
                 () => resolve(),
-                (error: any) => reject(error)
+                (error: any) => reject(error),
               )
-            } catch (error) {
+            }
+            catch (error) {
               reject(error)
             }
           })
-          
+
           result = searchResults
           break
 
@@ -583,28 +585,32 @@ export function activate(context: vscode.ExtensionContext) {
   // Start server with retry logic and better error handling
   // Check for port override file first
   let startPort = 9600 // Default port
-  
+
   if (vscode.workspace.workspaceFolders?.[0]) {
     const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath
-    const portFile = require('path').join(workspaceRoot, '.vscode_gateway_port')
-    
+    // eslint-disable-next-line ts/no-require-imports
+    const portFile = require('node:path').join(workspaceRoot, '.vscode_gateway_port')
+
     try {
-      const fs = require('fs')
+      // eslint-disable-next-line ts/no-require-imports
+      const fs = require('node:fs')
       if (fs.existsSync(portFile)) {
         const fileContent = fs.readFileSync(portFile, 'utf8').trim()
-        const filePort = parseInt(fileContent)
-        if (!isNaN(filePort) && filePort > 0 && filePort < 65536) {
+        const filePort = Number.parseInt(fileContent)
+        if (!Number.isNaN(filePort) && filePort > 0 && filePort < 65536) {
           startPort = filePort
           outputChannel.appendLine(`Using port ${startPort} from .vscode_gateway_port file`)
-        } else {
+        }
+        else {
           outputChannel.appendLine(`Invalid port in .vscode_gateway_port file: ${fileContent}, using default ${startPort}`)
         }
       }
-    } catch (error: any) {
+    }
+    catch (error: any) {
       outputChannel.appendLine(`Error reading .vscode_gateway_port file: ${error.message}, using default ${startPort}`)
     }
   }
-  
+
   const maxRetries = 10
 
   let currentPort = startPort
@@ -614,26 +620,29 @@ export function activate(context: vscode.ExtensionContext) {
     server = app.listen(currentPort, '127.0.0.1', () => {
       outputChannel.appendLine(`VSCode Internals Gateway listening on port ${currentPort}`)
       outputChannel.show(true)
-      
+
       // Write the actual port back to .vscode_gateway_port file for MCP server coordination
       if (vscode.workspace.workspaceFolders?.[0]) {
         const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath
-        const portFile = require('path').join(workspaceRoot, '.vscode_gateway_port')
-        
+        // eslint-disable-next-line ts/no-require-imports
+        const portFile = require('node:path').join(workspaceRoot, '.vscode_gateway_port')
+
         try {
-          const fs = require('fs')
+          // eslint-disable-next-line ts/no-require-imports
+          const fs = require('node:fs')
           fs.writeFileSync(portFile, currentPort.toString())
           outputChannel.appendLine(`Updated .vscode_gateway_port with actual port: ${currentPort}`)
-        } catch (error: any) {
+        }
+        catch (error: any) {
           outputChannel.appendLine(`Warning: Could not write .vscode_gateway_port file: ${error.message}`)
         }
       }
 
       // Show status message with context about port selection
-      const portMessage = currentPort === startPort 
+      const portMessage = currentPort === startPort
         ? `VSCode Internals Gateway started on port ${currentPort}`
         : `VSCode Internals Gateway started on port ${currentPort} (auto-selected due to conflict)`
-        
+
       vscode.window.showInformationMessage(portMessage)
 
       // Store the actual port in global state

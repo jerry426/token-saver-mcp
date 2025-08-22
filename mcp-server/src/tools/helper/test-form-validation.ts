@@ -78,25 +78,25 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler({ url, formSelector, fields, submitButtonSelector }: any): Promise<any> {
-      try {
-        const client = await ensureCDPConnection()
+  try {
+    const client = await ensureCDPConnection()
 
-        await client.navigate(url)
-        await client.waitForSelector(formSelector)
+    await client.navigate(url)
+    await client.waitForSelector(formSelector)
 
-        // Fill form fields
-        for (const [field, value] of Object.entries(fields)) {
-          const selector = `${formSelector} [name="${field}"], ${formSelector} #${field}`
-          await client.type(selector, value)
-        }
+    // Fill form fields
+    for (const [field, value] of Object.entries(fields)) {
+      const selector = `${formSelector} [name="${field}"], ${formSelector} #${field}`
+      await client.type(selector, value)
+    }
 
-        // Clear previous console messages
-        client.clearConsoleMessages()
+    // Clear previous console messages
+    client.clearConsoleMessages()
 
-        // Submit form
-        const submitSelector = submitButtonSelector || `${formSelector} button[type="submit"], ${formSelector} input[type="submit"]`
+    // Submit form
+    const submitSelector = submitButtonSelector || `${formSelector} button[type="submit"], ${formSelector} input[type="submit"]`
 
-        const result = await client.execute(`
+    const result = await client.execute(`
           (() => {
             const form = document.querySelector('${formSelector}');
             const submitBtn = document.querySelector('${submitSelector}');
@@ -144,11 +144,11 @@ export async function handler({ url, formSelector, fields, submitButtonSelector 
           })()
         `)
 
-        // Wait for form processing
-        await new Promise(resolve => setTimeout(resolve, 1500))
+    // Wait for form processing
+    await new Promise(resolve => setTimeout(resolve, 1500))
 
-        // Check post-submit state
-        const postSubmitResult = await client.execute(`
+    // Check post-submit state
+    const postSubmitResult = await client.execute(`
           (() => {
             const currentUrl = window.location.href;
             const form = document.querySelector('${formSelector}');
@@ -190,50 +190,50 @@ export async function handler({ url, formSelector, fields, submitButtonSelector 
           })()
         `)
 
-        // Get console errors
-        const consoleErrors = client.getConsoleMessages('error')
+    // Get console errors
+    const consoleErrors = client.getConsoleMessages('error')
 
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: true,
-              form: {
-                found: result.formFound,
-                submitted: result.submitButtonFound,
-                htmlValid: result.htmlValidation,
-              },
-              validation: {
-                hasErrors: postSubmitResult.errorCount > 0,
-                errors: postSubmitResult.validationErrors,
-                errorCount: postSubmitResult.errorCount,
-              },
-              result: {
-                redirected: postSubmitResult.redirected,
-                successMessage: postSubmitResult.successMessage,
-                formStillVisible: postSubmitResult.formStillVisible,
-                newUrl: postSubmitResult.redirected ? postSubmitResult.currentUrl : null,
-              },
-              console: {
-                errors: consoleErrors.map((e: any) => e.text),
-              },
-            }, null, 2),
-          }],
-        }
-      }
-      catch (error: any) {
-        logger.error('Failed to test form validation:', error)
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: error.message,
-            }, null, 2),
-          }],
-        }
-      }
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: true,
+          form: {
+            found: result.formFound,
+            submitted: result.submitButtonFound,
+            htmlValid: result.htmlValidation,
+          },
+          validation: {
+            hasErrors: postSubmitResult.errorCount > 0,
+            errors: postSubmitResult.validationErrors,
+            errorCount: postSubmitResult.errorCount,
+          },
+          result: {
+            redirected: postSubmitResult.redirected,
+            successMessage: postSubmitResult.successMessage,
+            formStillVisible: postSubmitResult.formStillVisible,
+            newUrl: postSubmitResult.redirected ? postSubmitResult.currentUrl : null,
+          },
+          console: {
+            errors: consoleErrors.map((e: any) => e.text),
+          },
+        }, null, 2),
+      }],
     }
+  }
+  catch (error: any) {
+    logger.error('Failed to test form validation:', error)
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: false,
+          error: error.message,
+        }, null, 2),
+      }],
+    }
+  }
+}
 
 export function register(server: McpServer) {
   server.registerTool(
@@ -248,6 +248,6 @@ export function register(server: McpServer) {
         submitButtonSelector: z.string().optional().describe('Submit button selector (default: finds submit button)'),
       },
     },
-    handler  // Use the exported handler
+    handler, // Use the exported handler
   )
 }

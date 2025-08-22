@@ -29,22 +29,23 @@ export function registerToolHandler(name: string, handler: any) {
  */
 export function listAllTools() {
   const metadata = getAllToolMetadata()
-  
+
   return metadata.map(tool => ({
     name: tool.name,
     description: tool.description,
     inputSchema: {
       type: 'object',
-      properties: tool.docs?.parameters ? 
-        Object.entries(tool.docs.parameters).reduce((acc, [key, desc]) => ({
-          ...acc,
-          [key]: { 
-            type: 'string', 
-            description: desc as string 
-          }
-        }), {}) : {},
-      required: []
-    }
+      properties: tool.docs?.parameters
+        ? Object.entries(tool.docs.parameters).reduce((acc, [key, desc]) => ({
+            ...acc,
+            [key]: {
+              type: 'string',
+              description: desc as string,
+            },
+          }), {})
+        : {},
+      required: [],
+    },
   }))
 }
 
@@ -61,13 +62,13 @@ export function getToolByName(name: string) {
     }
     return null
   }
-  
+
   const metadata = getAllToolMetadata().find(m => m.name === name)
-  
+
   return {
     name,
     description: metadata?.description || '',
-    handler
+    handler,
   }
 }
 
@@ -80,19 +81,19 @@ export function getToolsByCategory() {
     lsp: [],
     cdp: [],
     helper: [],
-    system: []
+    system: [],
   }
-  
+
   for (const tool of metadata) {
     const category = tool.category
     if (categories[category]) {
       categories[category].push({
         name: tool.name,
-        description: tool.description
+        description: tool.description,
       })
     }
   }
-  
+
   return categories
 }
 
@@ -105,17 +106,17 @@ export function getToolCounts() {
     lsp: 0,
     cdp: 0,
     helper: 0,
-    system: 0
+    system: 0,
   }
-  
+
   for (const tool of metadata) {
     if (counts[tool.category] !== undefined) {
       counts[tool.category]++
     }
   }
-  
+
   return {
     ...counts,
-    total: metadata.length
+    total: metadata.length,
   }
 }

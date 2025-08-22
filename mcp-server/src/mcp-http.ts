@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express'
-import { trackToolCall, trackError } from './metrics'
+import { trackError, trackToolCall } from './metrics'
 import { getAllToolMetadata, getToolHandler } from './tools/index'
 
 // Handle HTTP MCP requests (non-streaming)
 export async function handleHttpMcpRequest(req: Request, res: Response) {
   try {
     const { method, params, id } = req.body
-    
+
     // Handle different MCP methods
     switch (method) {
       case 'initialize': {
@@ -20,7 +20,7 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
             version: '2.0.0',
           },
         }
-        
+
         res.json({
           jsonrpc: '2.0',
           id,
@@ -28,7 +28,7 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
         })
         break
       }
-      
+
       case 'initialized': {
         // Client is ready, just acknowledge
         res.json({
@@ -38,11 +38,11 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
         })
         break
       }
-      
+
       case 'tools/list': {
         // Get all registered tools from the modular system
         const modularMetadata = getAllToolMetadata()
-        
+
         // Convert to MCP format with inputSchema
         const tools = modularMetadata.map(tool => ({
           name: tool.name,
@@ -50,10 +50,10 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
           inputSchema: {
             type: 'object',
             properties: {},
-            required: []
-          }
+            required: [],
+          },
         }))
-        
+
         res.json({
           jsonrpc: '2.0',
           id,
@@ -63,14 +63,14 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
         })
         break
       }
-      
+
       case 'tools/call': {
         // Call a specific tool
         const { name, arguments: args } = params
-        
+
         // Get the tool handler from the modular system
         const handler = getToolHandler(name)
-        
+
         if (!handler) {
           res.json({
             jsonrpc: '2.0',
@@ -83,16 +83,16 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
           trackError(name)
           return
         }
-        
+
         try {
           const startTime = Date.now()
           // Execute the tool handler
           const result = await handler(args)
-          
+
           // Track metrics
           const responseTime = Date.now() - startTime
           trackToolCall(name, responseTime)
-          
+
           // Return MCP-formatted response
           res.json({
             jsonrpc: '2.0',
@@ -106,7 +106,8 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
               ],
             },
           })
-        } catch (error: any) {
+        }
+        catch (error: any) {
           trackError(name)
           res.json({
             jsonrpc: '2.0',
@@ -119,7 +120,7 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
         }
         break
       }
-      
+
       default: {
         res.json({
           jsonrpc: '2.0',
@@ -131,7 +132,8 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
         })
       }
     }
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error('MCP HTTP error:', error)
     res.json({
       jsonrpc: '2.0',

@@ -14,11 +14,15 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "contributes": {
+    "commands": []
+  },
   "enabledApiProposals": [
     "findTextInFiles"
   ],
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run build",
+    "build": "node build.js",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./"
   },
