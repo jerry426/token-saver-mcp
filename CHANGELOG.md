@@ -5,104 +5,172 @@ All notable changes to Token Saver MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2025-08-23
+
+### Fixed
+- 🎯 **Critical Hover Fix** - VSCode MarkdownString content now properly extracted
+  - Hover tool was returning empty objects despite VSCode showing content
+  - Fixed by extracting non-enumerable properties from MarkdownString objects
+  - VSCode extension update required (new release on GitHub)
+
+### Added
+- 📚 **AI Collaboration Concept Document** - Revolutionary multi-AI pair programming vision
+  - Shared context repository for unified "mental model"
+  - Persistent collaboration state with database schema
+  - Genetic algorithms for evolving optimal collaboration patterns
+  - Session management with intelligent resume capabilities
+- 📊 **CDP Tools vs Playwright Comparison** - Clear guidance on when to use each
+- 🤝 **Multi-Client Support** - Multiple AIs can connect simultaneously
+  - Dedicated `/mcp-gemini` endpoint for Gemini CLI
+  - Separate `/mcp-streaming` endpoint for other clients
+
+### Changed
+- 📐 **API Standardization** - All tools now use 1-indexed line numbers
+  - Matches human-readable line numbers (there is no line 0)
+  - Automatic conversion to 0-indexed for internal VSCode calls
+  - `find_symbols` now returns exact character positions of symbol names
+- 📖 **README Reorganization** - Split into focused documents
+  - README.md: Concise landing page (~225 lines)
+  - README_FULL.md: Complete technical documentation
+  - README_USAGE_GUIDE.md: Tool usage with examples
+
+### Improved
+- Path resolution fallbacks for `get_instructions` tool
+- Documentation clarity for AI reviewers
+- Genetic algorithm concepts for self-improving collaboration
+
+## [1.2.0] - 2025-08-21
+
+### Added
+- 🚀 **Intelligent Port Management** - Zero-config multi-instance support
+  - Automatic port discovery and conflict resolution
+  - Support for multiple VSCode instances
+  - Smart port allocation with fallback options
+  - Port testing before binding
+
+### Changed
+- 🏗️ **Complete Modular Architecture** - Full migration to 31 independent tools
+  - Tools organized by category: lsp/, cdp/, helper/, system/
+  - Each tool is self-documenting with metadata
+  - Consistent error handling across all tools
+  - Clean separation of concerns
+
+### Fixed
+- Architecture documentation accuracy regarding CDP integration
+- Tool naming consistency across documentation
+
+## [1.1.0] - 2025-08-20
+
+### Added
+- 📊 **Enhanced Dashboard** - Complete re-implementation
+  - Real-time metrics visualization
+  - Tool usage statistics
+  - Performance monitoring
+  - Cost savings calculator
+
+### Changed
+- 🔧 **Major Codebase Restructuring**
+  - Migrated to fully modular tool architecture
+  - 31 tools now independently implemented
+  - Improved maintainability and testability
+
+## [1.0.5] - 2025-08-19
+
+### Added
+- 📚 **Self-Documenting Tools** - Every tool includes comprehensive metadata
+  - Built-in examples and usage patterns
+  - Category organization (LSP, CDP, Helper, System)
+  - Automatic documentation generation
+
+### Improved
+- Tool documentation readability with clean separators
+- Modular architecture completion
+
 ## [1.0.4] - 2025-08-18
 
 ### Added
-- 📚 **Context Conservation Messaging** - New compelling documentation explaining why Token Saver matters
-- 📝 **CHANGELOG.md** - Proper version history tracking
-- 🔗 **"View Changelog" Link** - Easy access to version history from README
-
-### Changed
-- Renamed `CLAUDE-MCP-USER.md` to `AI-MCP-USER.md` (more inclusive for all AI assistants)
-- Renamed `GEMINI_CLI_SETUP.md` to `CURL_USAGE_GUIDE.md` (generic guide for any curl user)
-- Improved README messaging focusing on context conservation and AI focus, not just token savings
+- 📚 **Context Conservation Messaging** - New compelling documentation
+- 🔗 **Complete REST Endpoint Parity** - All 30 tools via REST
+- 🔄 **Automatic Update Checker** - GitHub release notifications
 
 ### Fixed
-- 🔧 **High-level browser helpers now work via REST endpoint** - All 30 tools available through both endpoints
-  - Fixed missing `addBrowserHelpers` import in simple REST endpoint
-  - `debug_javascript_error`, `test_react_component`, `test_api_endpoint`, `test_form_validation`, and `check_page_performance` now fully functional
-- Fixed `search_text` parameter destructuring for REST endpoint
-
-### Improved
-- Documentation now emphasizes "context as a workbench" metaphor
-- Added "needle and haystack" explanation for why text search pollutes context
-- Clearer before/after comparisons with step-by-step breakdowns
-- Self-describing response format provides better guidance for all AI assistants
-
-## [1.0.3] - 2025-08-17
-
-### Added
-- 🌐 **Simple REST Endpoint** (`/mcp/simple`) - Universal compatibility with any HTTP client
-- 📝 **Self-Describing Response Format** - All responses include metadata for easier parsing
-- 📚 **CURL_USAGE_GUIDE.md** - Complete guide for using Token Saver with curl/REST
+- High-level browser helpers now work via REST endpoint
+- `search_text` parameter destructuring for REST endpoint
 
 ### Changed
-- Renamed `CLAUDE-MCP-USER.md` to `AI-MCP-USER.md` (more inclusive)
-- Renamed `GEMINI_CLI_SETUP.md` to `CURL_USAGE_GUIDE.md` (more generic)
-- Fixed `search_text` parameter handling in simple REST endpoint
-- Added `forceConsistentCasingInFileNames` to TypeScript config
+- Renamed documentation files for inclusivity:
+  - `CLAUDE-MCP-USER.md` → `AI-MCP-USER.md`
+  - `GEMINI_CLI_SETUP.md` → `CURL_USAGE_GUIDE.md`
 
-### Improved
-- REST endpoint now works with Gemini CLI, Postman, curl, and any HTTP client
-- No session management required for REST clients
-- Instant JSON responses without streaming complexity
-
-## [1.0.2] - 2025-08-16
+## [1.0.3] - 2025-08-18
 
 ### Added
-- 🎯 **Real-Time Developer Dashboard** at `http://127.0.0.1:9527/dashboard`
-  - Live metrics showing tokens saved in real-time
-  - Performance graphs with sub-millisecond response times
-  - Cost calculator tracking money saved per session
-  - 30+ tools visualization with usage stats
-- 🔄 **Automatic Update Checker** - Notifies users of new versions via GitHub API
-- 🚀 **Edge Browser Prioritization** - 10x better performance than Chrome
-  - 0.5ms average response time (vs Chrome's sluggish performance)
-  - Automatic WebSocket recovery (no more VSCode restarts)
+- 🌐 **Simple REST Endpoint** (`/mcp/simple`) - Universal HTTP compatibility
+- 📝 **Self-Describing Response Format** - Metadata in all responses
 
 ### Improved
-- Dashboard layout now uses 3x3 grid for better visibility
-- Available Tools card spans full width to prevent crowding
-- Updated documentation to reflect all improvements
+- REST endpoint compatibility with any HTTP client
+- No session management required for REST
+- Instant JSON responses without streaming
+
+## [1.0.2] - 2025-08-17
+
+### Added
+- 🎯 **Real-Time Developer Dashboard** at `/dashboard`
+  - Live metrics and performance graphs
+  - Token and cost savings tracking
+  - Tool usage visualization
+- 🚀 **Edge Browser Prioritization** - 0.5ms response times
+- 🔄 **WebSocket Auto-Recovery** - No more VSCode restarts
 
 ### Performance
-- 17,200+ tokens saved in typical session
-- 100-1000x faster than text search (measured, not estimated)
-- $0.05+ saved per session in API costs
-- 100% success rate with automatic error recovery
+- 17,200+ tokens saved per typical session
+- 100-1000x faster than text search
+- $0.05+ saved per session
 
-## [1.0.1] - 2025-08-14
+## [1.0.1] - 2025-08-17
 
 ### Added
-- Chrome DevTools Protocol (CDP) integration
-- 13 browser control tools for frontend testing
-- Browser automation capabilities
+- 🌐 **Chrome DevTools Protocol Integration**
+  - 13 browser control tools
+  - Frontend testing capabilities
+  - React-aware event handling
+  - Browser automation support
 
 ### Fixed
 - Session management improvements
 - Buffer system optimizations
+- Instruction reading from extension directory
 
-## [1.0.0] - 2025-08-13
+## [1.0.0] - 2025-08-16
 
 ### Initial Release
-- 17 Language Server Protocol (LSP) tools
-- Direct access to VSCode's language intelligence
-- MCP server with streaming protocol
-- Intelligent buffer system for large responses
-- Automatic Language Server activation
-- Session-based isolation for multiple users
+- 🔍 **17 Language Server Protocol Tools**
+  - Direct access to VSCode's language intelligence
+  - Go to Definition, Find References, Get Hover
+  - Code Completions, Symbol Rename
+  - Text Search, Diagnostics
+  - And 10+ more LSP capabilities
+- 🚀 **Revolutionary Dual Architecture**
+  - Stable VSCode Gateway extension
+  - Hot-reloadable MCP server
+  - 60x faster development cycle
+- 📊 **Intelligent Buffer System**
+  - Handles large responses efficiently
+  - Prevents token overflow
+- ⚡ **Performance Metrics**
+  - <100ms response time (vs 10-30s with grep)
+  - 90-99% fewer tokens used
+  - Zero additional cost
 
 ### Core Features
-- **Go to Definition** - Navigate to symbol definitions
-- **Find References** - Locate all usages of a symbol
-- **Get Hover Info** - Access documentation and type information
-- **Code Completions** - Intelligent code suggestions
-- **Symbol Rename** - Refactor across entire workspace
-- **Text Search** - Fast pattern matching across files
-- **Diagnostics** - Get errors and warnings
-- And 10+ more LSP tools
+- Automatic Language Server activation
+- Session-based isolation for multiple users
+- MCP streaming protocol support
+- Comprehensive documentation and examples
 
-### Performance
-- <100ms response time vs 10-30 seconds with grep
-- 90-99% fewer tokens used
-- Zero additional cost (leverages existing VSCode computation)
+## Historical Note
+
+Token Saver MCP was created to solve the fundamental problem of AI assistants wasting context window space with verbose search results. By providing direct access to VSCode's already-computed language intelligence and browser automation capabilities, it transforms AI from a code suggester into a true full-stack developer.
+
+The project has evolved from a simple LSP bridge to a comprehensive development platform supporting multi-AI collaboration, genetic algorithm optimization, and persistent knowledge management.
