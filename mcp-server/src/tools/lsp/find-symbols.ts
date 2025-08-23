@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
+import * as fs from 'node:fs'
 import { z } from 'zod'
 import { vscode } from '../../vscode-adapter'
 
@@ -107,6 +108,38 @@ export async function handler({ query }: any): Promise<any> {
       // Object format {start, end}
         startLine = range.start.line + 1
         startChar = range.start.character
+      }
+
+      // Try to find the exact position of the symbol name in the line
+      if (startLine !== null && startChar !== null && symbol.name && uri) {
+        try {
+          // Convert URI to file path
+          const filePath = uri.replace('file://', '')
+
+          // Read the file and get the specific line
+          const fileContent = fs.readFileSync(filePath, 'utf-8')
+          const lines = fileContent.split('\n')
+          const lineContent = lines[startLine - 1] // Convert to 0-indexed
+
+          if (lineContent) {
+            // Extract just the symbol name without parentheses or type parameters
+            const cleanSymbolName = symbol.name
+              .replace(/\(\)$/, '') // Remove function parentheses
+              .replace(/<.*>/, '') // Remove generic type parameters
+
+            // Find the position of the symbol name in the line
+            const symbolIndex = lineContent.indexOf(cleanSymbolName, startChar)
+
+            // If we found the symbol name after the current position, use that
+            if (symbolIndex >= startChar) {
+              startChar = symbolIndex
+            }
+          }
+        }
+        catch (err) {
+          // If we can't read the file or find the position, keep the original
+          // This is non-fatal - we'll just use VSCode's original position
+        }
       }
 
       return {

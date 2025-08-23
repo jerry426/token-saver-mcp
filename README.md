@@ -651,6 +651,27 @@ Returns: All languages registered in VSCode organized by category, active langua
 
 The days of complex VSCode settings are over - everything works automatically!
 
+### 🔌 Available Endpoints
+
+The MCP Server provides multiple endpoints for different AI assistants and use cases:
+
+| Endpoint | Purpose | Protocol | Used By |
+|----------|---------|----------|---------|
+| `http://127.0.0.1:9700/mcp` | Standard MCP protocol | JSON-RPC | Claude Code, most MCP clients |
+| `http://127.0.0.1:9700/mcp-gemini` | Gemini-specific endpoint | Streaming JSON-RPC | Gemini CLI |
+| `http://127.0.0.1:9700/mcp-streaming` | Alternative streaming endpoint | Streaming JSON-RPC | Future clients |
+| `http://127.0.0.1:9700/mcp/simple` | REST API for testing | Simple JSON | Testing, debugging |
+| `http://127.0.0.1:9700/dashboard` | Real-time metrics dashboard | Web UI | Browser monitoring |
+| `http://127.0.0.1:9700/health` | Health check endpoint | JSON | Monitoring tools |
+
+### 📐 API Conventions
+
+**Line Numbers**: All tools use **1-indexed line numbers** (line 1 is the first line) for consistency with how developers think about code.
+
+**Character Positions**: Character positions are **0-indexed** (character 0 is the first character in a line).
+
+**Symbol Positions**: The `find_symbols` tool returns the exact character position where the symbol name begins, not the start of the declaration.
+
 ## Testing
 
 Test all MCP tools:
@@ -814,6 +835,24 @@ mcp-server/
 └── utils/
     └── index.ts          # Logging utilities
 ```
+
+## AI Assistant Compatibility
+
+### Claude Code
+Token Saver MCP works seamlessly with Claude Code out of the box. Simply configure your `.claude.json` file to point to `http://127.0.0.1:9700/mcp`.
+
+### Gemini CLI
+Token Saver MCP now supports Gemini CLI! To use with Gemini:
+
+1. Configure `.gemini/settings.json` in your project root to connect to `http://127.0.0.1:9700/mcp-gemini`
+2. When prompting Gemini, explicitly tell it to use the MCP server tools in preference to its default file operations
+3. Example prompt: "Use the MCP server tools to find where function X is defined"
+
+### Other AI Assistants
+The server provides multiple endpoints for compatibility:
+- Standard MCP: `http://127.0.0.1:9700/mcp`
+- Streaming: `http://127.0.0.1:9700/mcp-streaming`
+- REST API: `http://127.0.0.1:9700/mcp/simple`
 
 ## Troubleshooting
 

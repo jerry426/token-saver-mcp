@@ -18,10 +18,13 @@ When working on THIS codebase, you MUST follow the MCP tool usage guidelines. Th
    app.listen(port, callback)              // ❌ WRONG - may bind to IPv6
    ```
 
-2. **Endpoint Path**: MCP endpoint MUST be at `/mcp` (not `/mcp/http` or other paths)
+2. **Endpoint Path**: MCP endpoint MUST be at `/mcp` for Claude Code
    ```
-   http://127.0.0.1:9700/mcp     ✅ CORRECT
-   http://127.0.0.1:9700/mcp/http ❌ WRONG
+   http://127.0.0.1:9700/mcp           ✅ CORRECT for Claude Code
+   http://127.0.0.1:9700/mcp-gemini    ✅ For Gemini CLI
+   http://127.0.0.1:9700/mcp-streaming ✅ Alternative streaming endpoint
+   http://127.0.0.1:9700/mcp/simple    ✅ REST API for testing
+   http://127.0.0.1:9700/mcp/http      ❌ WRONG - not a valid endpoint
    ```
 
 3. **Input Schema**: ALL tools MUST include `inputSchema` in their definitions
@@ -173,6 +176,28 @@ Extension settings (in VSCode settings.json):
 - All LSP operations automatically activate the required Language Server if needed
 - URI parameters in MCP tools must be properly encoded file:// URIs
 - Python test clients available in `test/` directory for debugging
+
+## API Conventions
+
+### Line Numbers
+- **All tools use 1-indexed line numbers** (line 1 is the first line)
+- This matches how developers think about code and how editors display line numbers
+- The conversion from 1-indexed to 0-indexed (for VSCode internals) happens automatically
+
+### Character Positions
+- **Character positions are 0-indexed** (character 0 is the first character)
+- This is consistent with most programming APIs and VSCode
+
+### Symbol Positions
+- `find_symbols` returns the **exact character position** where the symbol name begins
+- Example: For `export function normalizeParams`, it returns the position of the 'n' in 'normalizeParams', not the 'e' in 'export'
+- This ensures `get_hover` and other position-sensitive tools work correctly when chaining operations
+
+### Multi-Client Support
+The server supports multiple AI assistant clients simultaneously:
+- **Claude Code**: Uses `/mcp` endpoint with standard JSON-RPC
+- **Gemini CLI**: Uses `/mcp-gemini` endpoint with streaming support
+- **Other clients**: Can use `/mcp-streaming` or implement their own endpoints
 
 ## Complete Feature Set - All 31 Tools
 

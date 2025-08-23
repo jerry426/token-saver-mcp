@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "token-saver-mcp": {
+      "httpUrl": "http://127.0.0.1:9700/mcp-gemini"
+    }
+  }
+}

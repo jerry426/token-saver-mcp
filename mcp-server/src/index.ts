@@ -289,8 +289,8 @@ async function startServer() {
   // MUST be /mcp per Anthropic documentation
   app.post('/mcp', handleHttpMcpRequest)
 
-  // MCP Protocol endpoint (streaming) - MOVED to avoid conflicts
-  app.post('/mcp-streaming', async (req, res) => {
+  // Shared handler for streaming MCP requests
+  const handleStreamingMcpRequest = async (req: express.Request, res: express.Response) => {
     try {
       // Check for existing session ID (optional, for backwards compatibility)
       const sessionId = req.headers['mcp-session-id'] as string | undefined
@@ -421,18 +421,26 @@ async function startServer() {
       console.error('Error handling MCP request:', error)
       res.status(500).json({ error: error.message })
     }
-  })
+  }
+
+  // MCP Protocol endpoint for Gemini (streaming)
+  app.post('/mcp-gemini', handleStreamingMcpRequest)
+
+  // MCP Protocol endpoint (streaming) - MOVED to avoid conflicts
+  app.post('/mcp-streaming', handleStreamingMcpRequest)
 
   // Start Express server (always runs, even in stdio mode)
   // Explicitly bind to IPv4 127.0.0.1 to avoid IPv6 issues
   const server = app.listen(MCP_PORT, '127.0.0.1', () => {
-    console.log(`\n🚀 Token Saver MCP Server running on 127.0.0.1:${MCP_PORT}`)
+    console.log(`
+🚀 Token Saver MCP Server running on 127.0.0.1:${MCP_PORT}`)
     console.log(`   MCP Protocol: http://127.0.0.1:${MCP_PORT}/mcp (for Claude Code)`)
     console.log(`   REST API: http://localhost:${MCP_PORT}/mcp/simple`)
     console.log(`   📊 Dashboard: http://localhost:${MCP_PORT}/dashboard`)
     console.log(`   Gateway: Connected to VSCode on port ${GATEWAY_PORT}`)
     console.log(`   Tools: All ${getAllToolMetadata().length} tools loaded successfully`)
-    console.log('\n📝 Development mode: Changes will hot-reload automatically')
+    console.log(`
+📝 Development mode: Changes will hot-reload automatically`)
   })
 
   server.on('error', (err: any) => {

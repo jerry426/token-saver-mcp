@@ -85,8 +85,37 @@ export async function handler(args: any): Promise<any> {
   const handlerImpl = async ({ uri, line, character }: { uri: string, line: number, character: number }) => {
     const result = await getReferences(uri, line, character)
 
+    // Convert line numbers from 0-indexed to 1-indexed for consistency
+    const processedResult = Array.isArray(result)
+      ? result.map((ref: any) => {
+          if (ref && ref.range) {
+            // Handle array format [start, end]
+            if (Array.isArray(ref.range) && ref.range.length >= 2) {
+              return {
+                ...ref,
+                range: [
+                  { ...ref.range[0], line: ref.range[0].line + 1 },
+                  { ...ref.range[1], line: ref.range[1].line + 1 },
+                ],
+              }
+            }
+            // Handle object format {start, end}
+            else if (ref.range.start && ref.range.end) {
+              return {
+                ...ref,
+                range: {
+                  start: { ...ref.range.start, line: ref.range.start.line + 1 },
+                  end: { ...ref.range.end, line: ref.range.end.line + 1 },
+                },
+              }
+            }
+          }
+          return ref
+        })
+      : result
+
     // Apply buffering if needed (references can be numerous)
-    const bufferedResponse = bufferResponse('get_references', result)
+    const bufferedResponse = bufferResponse('get_references', processedResult)
 
     if (bufferedResponse.metadata) {
       console.error(`[get_references] Buffered response: ${bufferedResponse.metadata.totalTokens} tokens`)
@@ -101,7 +130,7 @@ export async function handler(args: any): Promise<any> {
       }
     }
 
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+    return { content: [{ type: 'text', text: JSON.stringify(processedResult, null, 2) }] }
   }
   return handlerImpl(normalized)
 }
@@ -115,7 +144,7 @@ export function register(server: McpServer) {
       description: metadata.description,
       inputSchema: {
         uri: z.string().describe(metadata.docs.parameters?.uri || 'The file URI in encoded format'),
-        line: z.number().describe(metadata.docs.parameters?.line || 'The line number (0-based)'),
+        line: z.number().describe(metadata.docs.parameters?.line || 'The line number (1-based)'),
         character: z.number().describe(metadata.docs.parameters?.character || 'The character position (0-based)'),
       },
     },
