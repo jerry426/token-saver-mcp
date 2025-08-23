@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { getHover } from '../lsp-implementations'
+import { normalizeParams } from './utils'
 
 /**
  * Tool metadata for documentation generation
@@ -77,24 +78,62 @@ export const metadata: ToolMetadata = {
 }
 
 // Tool handler - single source of truth for execution
-export async function handler({ uri, line, character }: any): Promise<any> {
-  const result = await getHover(uri, line, character)
+export async function handler(args: any): Promise<any> {
+  const normalized = normalizeParams(args)
+  const handlerImpl = async ({ uri, line, character }: { uri: string, line: number, character: number }) => {
+    const result = await getHover(uri, line, character)
 
-  if (!result) {
+    if (!result || (Array.isArray(result) && result.length === 0)) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'No hover information available at the specified position.',
+        }],
+      }
+    }
+
+    // Process hover contents
+    if (Array.isArray(result)) {
+      const allContents: string[] = []
+
+      for (const hover of result) {
+        if (hover && hover.contents) {
+          for (const content of hover.contents) {
+            if (typeof content === 'string') {
+              allContents.push(content)
+            }
+            else if (content && typeof content === 'object') {
+              // Handle markdown content
+              if (content.value) {
+                allContents.push(content.value)
+              }
+              else if (content.kind === 'markdown' && content.value) {
+                allContents.push(content.value)
+              }
+            }
+          }
+        }
+      }
+
+      if (allContents.length > 0) {
+        return {
+          content: [{
+            type: 'text',
+            text: allContents.join('\n\n'),
+          }],
+        }
+      }
+    }
+
+    // Fallback to JSON.stringify if the structure is not as expected
     return {
       content: [{
         type: 'text',
-        text: 'No hover information available at the specified position.',
+        text: JSON.stringify(result, null, 2),
       }],
     }
   }
-
-  return {
-    content: [{
-      type: 'text',
-      text: JSON.stringify(result),
-    }],
-  }
+  return handlerImpl(normalized)
 }
 
 // Tool registration function

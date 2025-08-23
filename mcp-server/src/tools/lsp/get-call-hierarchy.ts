@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { getCallHierarchy } from '../lsp-implementations'
+import { normalizeParams } from './utils'
 
 /**
  * Tool metadata for documentation generation
@@ -89,6 +90,7 @@ const incoming = get_call_hierarchy({
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
+  const normalized = normalizeParams(args)
   const handlerImpl = async ({ uri, line, character, direction }: { uri: string, line: number, character: number, direction?: 'incoming' | 'outgoing' }) => {
     const result = await getCallHierarchy(uri, line, character, direction || 'incoming')
 
@@ -108,7 +110,7 @@ export async function handler(args: any): Promise<any> {
       }],
     }
   }
-  return handlerImpl(args)
+  return handlerImpl(normalized)
 }
 
 // Tool registration function

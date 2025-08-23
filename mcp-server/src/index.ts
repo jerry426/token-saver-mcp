@@ -7,7 +7,7 @@ import cors from 'cors'
 import express from 'express'
 import { handleHttpMcpRequest } from './mcp-http'
 import { dashboardClients, getMetricsData, metrics, trackError, trackToolCall } from './metrics'
-import { getAllToolMetadata, getToolByName, getToolsByCategory, listAllTools, registerAllTools } from './tools/index'
+import { getAllToolMetadata, getToolHandler, getToolsByCategory, listAllTools, registerAllTools } from './tools/index'
 import { initializeVSCodeAdapter } from './vscode-adapter'
 import { getGatewayClient } from './vscode-gateway-client'
 
@@ -188,7 +188,7 @@ async function startServer() {
   app.get('/available-tools', (_req, res) => {
     // Get all tools from the modular system
     const modularTools = getAllToolMetadata()
-    
+
     // Get metrics data which includes tool usage
     const metricsData = getMetricsData()
 
@@ -244,8 +244,8 @@ async function startServer() {
       if (method === 'tools/call') {
         const { name, arguments: args } = params
 
-        const tool = getToolByName(name)
-        if (!tool) {
+        const handler = getToolHandler(name)
+        if (!handler) {
           res.status(404).json({ error: `Tool not found: ${name}` })
           return
         }
@@ -255,7 +255,7 @@ async function startServer() {
           const startTime = Date.now()
 
           // Call the tool handler with the arguments
-          const result = await tool.handler(args)
+          const result = await handler(args)
 
           // Track successful call
           const responseTime = Date.now() - startTime

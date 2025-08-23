@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { getDefinition } from '../lsp-implementations'
+import { normalizeParams } from './utils'
 
 /**
  * Tool metadata for documentation generation
@@ -69,7 +70,8 @@ get_definition({
 
 // Tool handler - single source of truth for execution
 export async function handler({ uri, line, character }: any): Promise<any> {
-  const result = await getDefinition(uri, line, character)
+  const normalized = normalizeParams({ uri, line, character })
+  const result = await getDefinition(uri, normalized.line, normalized.character)
   return { content: [{ type: 'text', text: JSON.stringify(result) }] }
 }
 

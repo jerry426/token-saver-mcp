@@ -1,35 +1,9 @@
-// Placeholder imports - these would come from the browser-functions module
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
+import { ensureCDPConnection } from '../../browser-functions'
 
-async function getCDPClient(): Promise<any> { throw new Error('CDP not implemented in standalone') }
-function resetCDPClient(): void {}
 const logger = { info: console.error, error: console.error, warn: console.warn }
-
-/**
- * Ensure CDP client is connected and healthy, recovering if needed
- */
-async function ensureCDPConnection(): Promise<ReturnType<typeof getCDPClient>> {
-  let client = await getCDPClient()
-
-  // Check if connection is healthy
-  const isHealthy = await client.isHealthy()
-
-  if (!isHealthy) {
-    logger.info('CDP connection unhealthy, resetting client...')
-    resetCDPClient()
-    client = await getCDPClient()
-  }
-
-  // Connect if not active
-  if (!client.isActive()) {
-    logger.info('Connecting to Chrome via CDP...')
-    await client.connect()
-  }
-
-  return client
-}
 
 export const metadata: ToolMetadata = {
   name: 'debug_javascript_error',
@@ -128,7 +102,7 @@ export async function handler({ url, triggerAction, waitBeforeTrigger = 1000 }: 
 
     // Collect all errors
     const capturedErrors = await client.execute('window.__capturedErrors || []')
-    const consoleErrors = client.getConsoleMessages('error')
+    const consoleErrors = client.getConsoleMessages ? client.getConsoleMessages('error') : []
 
     // Analyze errors
     const analysis = await client.execute(`

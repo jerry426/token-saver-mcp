@@ -4,6 +4,7 @@ import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { bufferResponse } from '../../buffer-manager'
 import { getCompletions } from '../lsp-implementations'
+import { normalizeParams } from './utils'
 
 /**
  * Tool metadata for documentation generation
@@ -79,6 +80,7 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
+  const normalized = normalizeParams(args)
   const handlerImpl = async ({ uri, line, character }: { uri: string, line: number, character: number }) => {
     const result = await getCompletions(uri, line, character)
 
@@ -100,7 +102,7 @@ export async function handler(args: any): Promise<any> {
 
     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
   }
-  return handlerImpl(args)
+  return handlerImpl(normalized)
 }
 
 // Tool registration function

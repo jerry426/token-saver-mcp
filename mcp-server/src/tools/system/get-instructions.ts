@@ -51,14 +51,14 @@ export async function handler(): Promise<any> {
     const possiblePaths = [
       // When running from mcp-server directory
       path.join(process.cwd(), '..', 'README_USAGE_GUIDE.md'),
-      // When running from root directory  
+      // When running from root directory
       path.join(process.cwd(), 'README_USAGE_GUIDE.md'),
       // Relative to the compiled dist folder
       path.join(__dirname, '..', '..', '..', 'README_USAGE_GUIDE.md'),
       // Absolute fallback path
       '/Users/jerry/VSCode/token-saver-mcp/README_USAGE_GUIDE.md',
     ]
-    
+
     let instructionsPath = ''
     for (const p of possiblePaths) {
       try {
@@ -70,7 +70,7 @@ export async function handler(): Promise<any> {
         // Try next path
       }
     }
-    
+
     if (!instructionsPath) {
       throw new Error(`Could not find README_USAGE_GUIDE.md in any of: ${possiblePaths.join(', ')}`)
     }

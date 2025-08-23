@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { renameSymbol } from '../lsp-implementations'
+import { normalizeParams } from './utils'
 
 /**
  * Tool metadata for documentation generation
@@ -82,6 +83,7 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
+  const normalized = normalizeParams(args)
   const handlerImpl = async ({ uri, line, character, newName }: { uri: string, line: number, character: number, newName: string }) => {
     const result = await renameSymbol(uri, line, character, newName)
 
@@ -101,7 +103,7 @@ export async function handler(args: any): Promise<any> {
       }],
     }
   }
-  return handlerImpl(args)
+  return handlerImpl(normalized)
 }
 
 // Tool registration function

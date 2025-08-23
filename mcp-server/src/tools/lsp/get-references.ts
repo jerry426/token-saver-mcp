@@ -4,6 +4,7 @@ import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { bufferResponse } from '../../buffer-manager'
 import { getReferences } from '../lsp-implementations'
+import { normalizeParams } from './utils'
 
 /**
  * Tool metadata for documentation generation
@@ -80,6 +81,7 @@ const refs = get_references({
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
+  const normalized = normalizeParams(args)
   const handlerImpl = async ({ uri, line, character }: { uri: string, line: number, character: number }) => {
     const result = await getReferences(uri, line, character)
 
@@ -101,7 +103,7 @@ export async function handler(args: any): Promise<any> {
 
     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
   }
-  return handlerImpl(args)
+  return handlerImpl(normalized)
 }
 
 // Tool registration function

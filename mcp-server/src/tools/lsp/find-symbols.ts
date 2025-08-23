@@ -85,21 +85,40 @@ export async function handler({ query }: any): Promise<any> {
   }
 
   // Format results for better readability
-  const formattedResults = (results as any[]).map((symbol: any) => {
-    const uri = symbol.location?.uri?.toString() || ''
-    const fileName = uri.split('/').pop() || 'unknown'
-    const range = symbol.location?.range
+  const formattedResults = (results as any[])
+    .filter(symbol => symbol && symbol.location)
+    .map((symbol: any) => {
+    // Handle VSCode's URI format
+      const uriObj = symbol.location?.uri
+      const uri = uriObj?.path || uriObj?.toString() || ''
+      const fileName = uri.split('/').pop() || 'unknown'
 
-    return {
-      name: symbol.name,
-      kind: symbol.kind, // Function, Class, Variable, etc.
-      file: fileName,
-      uri,
-      line: range ? range.start.line + 1 : null,
-      character: range ? range.start.character : null,
-      containerName: symbol.containerName || '',
-    }
-  })
+      // Handle range - it might be an array [start, end] or an object {start, end}
+      const range = symbol.location?.range
+      let startLine = null
+      let startChar = null
+
+      if (Array.isArray(range) && range.length >= 1) {
+      // Array format [start, end]
+        startLine = range[0].line + 1
+        startChar = range[0].character
+      }
+      else if (range?.start) {
+      // Object format {start, end}
+        startLine = range.start.line + 1
+        startChar = range.start.character
+      }
+
+      return {
+        name: symbol.name,
+        kind: symbol.kind, // Function, Class, Variable, etc.
+        file: fileName,
+        uri: uriObj?.scheme ? `${uriObj.scheme}://${uri}` : uri,
+        line: startLine,
+        character: startChar,
+        containerName: symbol.containerName || '',
+      }
+    })
 
   return {
     content: [{

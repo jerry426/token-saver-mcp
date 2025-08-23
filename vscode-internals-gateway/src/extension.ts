@@ -105,10 +105,21 @@ export function activate(context: vscode.ExtensionContext) {
         }
       }
 
-      // Process arguments - parse file URIs
+      // Process arguments - parse file URIs and positions
       const processedArgs = args.map((arg: any) => {
         if (typeof arg === 'string' && arg.startsWith('file://')) {
           return vscode.Uri.parse(arg)
+        }
+        // Convert position objects to vscode.Position
+        if (arg && typeof arg === 'object' && 'line' in arg && 'character' in arg && !('start' in arg)) {
+          return new vscode.Position(arg.line, arg.character)
+        }
+        // Convert range objects to vscode.Range
+        if (arg && typeof arg === 'object' && 'start' in arg && 'end' in arg) {
+          return new vscode.Range(
+            new vscode.Position(arg.start.line, arg.start.character),
+            new vscode.Position(arg.end.line, arg.end.character),
+          )
         }
         return arg
       })
@@ -125,17 +136,65 @@ export function activate(context: vscode.ExtensionContext) {
       const commandPromise = vscode.commands.executeCommand(command, ...processedArgs)
 
       try {
-        const result = await Promise.race([commandPromise, timeoutPromise])
+        let result = await Promise.race([commandPromise, timeoutPromise])
 
         if (timeoutHandle)
           clearTimeout(timeoutHandle)
+
+        // Special handling for hover results to extract MarkdownString content
+        if (command === 'vscode.executeHoverProvider' && Array.isArray(result)) {
+          result = result.map((hover: any) => {
+            if (hover && hover.contents) {
+              return {
+                ...hover,
+                contents: hover.contents.map((content: any) => {
+                  // Handle different content types
+                  if (content && typeof content === 'object') {
+                    // Try to extract the value property (MarkdownString objects have this)
+                    let value = null
+
+                    // Try direct property access
+                    try {
+                      value = content.value || content._value
+                    }
+                    catch (e) {}
+
+                    // Try Reflect.get as fallback
+                    if (!value) {
+                      try {
+                        value = Reflect.get(content, 'value') || Reflect.get(content, '_value')
+                      }
+                      catch (e) {}
+                    }
+
+                    if (value) {
+                      return {
+                        kind: 'markdown',
+                        value: String(value),
+                      }
+                    }
+                  }
+
+                  // Handle plain strings
+                  if (typeof content === 'string') {
+                    return content
+                  }
+
+                  // Return empty object if we can't extract content
+                  return {}
+                }),
+              }
+            }
+            return hover
+          })
+        }
 
         // Check response size
         const resultStr = JSON.stringify(result)
 
         if (resultStr.length > 1000000) { // 1MB threshold
           // Buffer large response
-          const bufferId = `buffer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          const bufferId = `buffer_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
           responseBuffers.set(bufferId, result)
 
           // Auto-cleanup after 5 minutes

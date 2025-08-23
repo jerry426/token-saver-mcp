@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-
 import type { ToolMetadata } from '../types'
 import { z } from 'zod'
 import { findImplementations } from '../lsp-implementations'
+import { normalizeParams } from './utils'
 
 /**
  * Tool metadata for documentation generation
@@ -78,6 +78,7 @@ export const metadata: ToolMetadata = {
 
 // Tool handler - single source of truth for execution
 export async function handler(args: any): Promise<any> {
+  const normalized = normalizeParams(args)
   const handlerImpl = async ({ uri, line, character }: { uri: string, line: number, character: number }) => {
     const result = await findImplementations(uri, line, character)
 
@@ -97,7 +98,7 @@ export async function handler(args: any): Promise<any> {
       }],
     }
   }
-  return handlerImpl(args)
+  return handlerImpl(normalized)
 }
 
 // Tool registration function
