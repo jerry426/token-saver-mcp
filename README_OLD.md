@@ -5,7 +5,7 @@
 
 > **Transform AI from a code suggester into a true full-stack developer with complete control over both backend code and frontend browsers.**
 
-📚 **[📖 Complete Usage Guide & Examples →](README_USAGE_GUIDE.md)** | 📝 [View Changelog](CHANGELOG.md)
+📚 **[📖 Complete Usage Guide & Examples →](README_USAGE_GUIDE.md)** | 🔄 [View Releases](https://github.com/jerry426/token-saver-mcp/releases)
 
 ## The Core Message: Context Conservation
 

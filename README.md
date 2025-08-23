@@ -6,8 +6,8 @@
 > **Transform AI from a code suggester into a true full-stack developer — with instant access to code intelligence and real browser control.**
 
 📚 [**Full Usage Guide & Examples →**](README_USAGE_GUIDE.md) |  
-📝 [Changelog](CHANGELOG.md) |  
-📖 [Detailed Technical README →](README_FULL.md)
+📖 [Detailed Technical README →](README_FULL.md) |  
+🔄 [Releases](https://github.com/jerry426/token-saver-mcp/releases)
 
 ---
 
