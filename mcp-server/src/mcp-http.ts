@@ -68,6 +68,26 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
         // Call a specific tool
         const { name, arguments: args } = params
 
+        // Debug logging for Claude Code integration
+        console.log(`[MCP Debug] Tool: ${name}`)
+        console.log(`[MCP Debug] Raw arguments:`, JSON.stringify(args))
+        console.log(`[MCP Debug] Arguments type:`, typeof args)
+
+        // Handle Claude Code's wrapped arguments format
+        let actualArgs = args
+        if (args && typeof args === 'object' && 'properties' in args) {
+          // Claude Code wraps arguments in a "properties" field as a JSON string
+          try {
+            actualArgs = typeof args.properties === 'string'
+              ? JSON.parse(args.properties)
+              : args.properties
+            console.log(`[MCP Debug] Unwrapped arguments:`, JSON.stringify(actualArgs))
+          }
+          catch (e) {
+            console.error(`[MCP Debug] Failed to parse properties:`, e)
+          }
+        }
+
         // Get the tool handler from the modular system
         const handler = getToolHandler(name)
 
@@ -86,8 +106,8 @@ export async function handleHttpMcpRequest(req: Request, res: Response) {
 
         try {
           const startTime = Date.now()
-          // Execute the tool handler
-          const result = await handler(args)
+          // Execute the tool handler with unwrapped arguments
+          const result = await handler(actualArgs)
 
           // Track metrics
           const responseTime = Date.now() - startTime

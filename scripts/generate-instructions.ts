@@ -51,6 +51,14 @@ function generateToolDocs(tool: ParsedMetadata): string {
 
   sections.push(tool.description)
 
+  // Add parameters
+  if (tool.docs?.parameters && Object.keys(tool.docs.parameters).length > 0) {
+    sections.push('\n**Parameters:**')
+    Object.entries(tool.docs.parameters).forEach(([param, desc]) => {
+      sections.push(`- \`${param}\`: ${desc}`)
+    })
+  }
+
   // Add example
   if (tool.docs?.examples?.[0]) {
     sections.push('\n**Example:**')
@@ -110,6 +118,7 @@ function generateCategorySection(category: string, tools: ParsedMetadata[]): str
     cdp: 'Browser Control (CDP)',
     helper: 'Browser Testing Helpers',
     system: 'System Tools',
+    memory: 'Memory System',
   }
 
   const categoryDescriptions: Record<string, string> = {
@@ -117,6 +126,7 @@ function generateCategorySection(category: string, tools: ParsedMetadata[]): str
     cdp: 'Tools for browser automation using Chrome DevTools Protocol:',
     helper: 'High-level testing utilities that combine multiple operations:',
     system: '',
+    memory: 'Persistent context management replacing /resume with 90% fewer tokens:',
   }
 
   sections.push(`### ${categoryNames[category]} - ${tools.length} Tools`)
@@ -143,8 +153,15 @@ function generateDecisionTree(tools: ParsedMetadata[]): string {
   const hasLsp = tools.some(t => t.category === 'lsp')
   const hasCdp = tools.some(t => t.category === 'cdp')
   const hasHelper = tools.some(t => t.category === 'helper')
+  const hasMemory = tools.some(t => t.category === 'memory')
 
   const lines: string[] = []
+
+  if (hasMemory) {
+    lines.push('Starting new session?   → smart_resume (instead of /resume)')
+    lines.push('Saving context?        → write_memory with importance/verbosity')
+    lines.push('Finding past info?     → read_memory or list_memories')
+  }
 
   if (hasLsp) {
     lines.push('Finding code?           → search_text → get_definition → get_references')
@@ -219,18 +236,20 @@ async function main() {
 
     // Generate category summaries
     const categorySummary: string[] = []
-    const categoryOrder = ['lsp', 'cdp', 'helper', 'system']
+    const categoryOrder = ['memory', 'lsp', 'cdp', 'helper', 'system']
 
     categoryOrder.forEach((cat) => {
       if (toolsByCategory[cat]) {
         const count = toolsByCategory[cat].length
         const name = {
+          memory: 'Memory tools',
           lsp: 'LSP tools',
           cdp: 'CDP tools',
           helper: 'Helper tools',
           system: 'System tools',
         }[cat]
         const desc = {
+          memory: 'Persistent context management',
           lsp: 'Code navigation and intelligence',
           cdp: 'Browser automation and control',
           helper: 'High-level testing utilities',

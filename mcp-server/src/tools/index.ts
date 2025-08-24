@@ -37,6 +37,17 @@ import * as getReferences from './lsp/get-references'
 import * as getSemanticTokens from './lsp/get-semantic-tokens'
 import * as getTypeDefinition from './lsp/get-type-definition'
 import * as renameSymbol from './lsp/rename-symbol'
+import * as configureMemory from './memory/configure-memory'
+import * as deleteMemory from './memory/delete-memory'
+import * as exportMemories from './memory/export-memories'
+import * as importMemories from './memory/import-memories'
+import * as listMemories from './memory/list-memories'
+import * as readMemory from './memory/read-memory'
+import * as searchMemories from './memory/search-memories'
+import * as smartResume from './memory/smart-resume'
+
+// Import all Memory tools
+import * as writeMemory from './memory/write-memory'
 import * as getBufferStats from './system/get-buffer-stats'
 import * as getInstructions from './system/get-instructions'
 import * as getSupportedLanguages from './system/get-supported-languages'
@@ -99,6 +110,17 @@ const toolModules: ToolModule[] = [
   testFormValidation,
   checkPagePerformance,
   debugJavascriptError,
+
+  // Memory tools (9)
+  writeMemory,
+  readMemory,
+  listMemories,
+  searchMemories,
+  deleteMemory,
+  smartResume,
+  exportMemories,
+  importMemories,
+  configureMemory,
 ]
 
 // Populate tool handlers map for HTTP endpoint access
