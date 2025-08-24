@@ -66,13 +66,31 @@ class MemoryDatabase {
     this.initDatabase()
   }
 
-  private initDatabase() {
-    // Create memories table
+  private checkNeedsMigration(): boolean {
+    try {
+      // Check if memories table exists
+      const tableInfo = this.db.prepare('PRAGMA table_info(memories)').all()
+      if (tableInfo.length === 0)
+        return false // No table, will create new one
+
+      // Check if value_text column exists (we need to migrate to remove it)
+      const hasValueText = tableInfo.some((col: any) => col.name === 'value_text')
+      return hasValueText // Need migration if value_text EXISTS (to remove it)
+    }
+    catch {
+      return false // No table exists yet
+    }
+  }
+
+  private migrateToJsonSchema() {
+    console.log('[MemoryDB] Migrating to clean JSON schema...')
+
+    // Create new table with clean JSON schema (no generated column)
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS memories (
+      CREATE TABLE memories_new (
         id TEXT PRIMARY KEY,
         key TEXT NOT NULL,
-        value TEXT NOT NULL,
+        value JSON NOT NULL,
         scope TEXT NOT NULL DEFAULT 'project',
         project_path TEXT,
         session_id TEXT,
@@ -87,6 +105,58 @@ class MemoryDatabase {
         verbosity INTEGER DEFAULT 2
       )
     `)
+
+    // Copy data from old table, converting value to JSON type
+    this.db.exec(`
+      INSERT INTO memories_new 
+      SELECT 
+        id, key, 
+        json(value), -- Convert TEXT to JSON type
+        scope, project_path, session_id,
+        created_at, updated_at, accessed_at,
+        created_by, ttl, tags, access_count,
+        importance, verbosity
+      FROM memories
+    `)
+
+    // Drop old table and rename new one
+    this.db.exec(`
+      DROP TABLE memories;
+      ALTER TABLE memories_new RENAME TO memories;
+    `)
+
+    console.log('[MemoryDB] Migration complete!')
+  }
+
+  private initDatabase() {
+    // Check if we need to migrate from TEXT to JSON type
+    const needsMigration = this.checkNeedsMigration()
+
+    if (needsMigration) {
+      this.migrateToJsonSchema()
+    }
+    else {
+      // Create memories table with clean JSON type
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS memories (
+          id TEXT PRIMARY KEY,
+          key TEXT NOT NULL,
+          value JSON NOT NULL,
+          scope TEXT NOT NULL DEFAULT 'project',
+          project_path TEXT,
+          session_id TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now')),
+          accessed_at TEXT DEFAULT (datetime('now')),
+          created_by TEXT,
+          ttl INTEGER,
+          tags TEXT,
+          access_count INTEGER DEFAULT 0,
+          importance INTEGER DEFAULT 3,
+          verbosity INTEGER DEFAULT 2
+        )
+      `)
+    }
 
     // Add columns to existing tables (migration) - do this first!
     try {
@@ -129,7 +199,13 @@ class MemoryDatabase {
 
   private initFTS() {
     try {
-      // Create FTS5 virtual table
+      // Drop old FTS table if it exists (for migration)
+      try {
+        this.db.exec(`DROP TABLE IF EXISTS memories_fts`)
+      }
+      catch {}
+
+      // Create FTS5 virtual table using value column directly
       this.db.exec(`
         CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts 
         USING fts5(key, value, content='memories', content_rowid='rowid')
@@ -140,7 +216,7 @@ class MemoryDatabase {
       const ftsCount = this.db.prepare('SELECT COUNT(*) as count FROM memories_fts').pluck().get() as number || 0
 
       if (existingCount.count > 0 && ftsCount === 0) {
-        // Initial population
+        // Initial population using value column
         this.db.exec(`
           INSERT INTO memories_fts(rowid, key, value) 
           SELECT rowid, key, value FROM memories
@@ -192,9 +268,10 @@ class MemoryDatabase {
     importance?: number // 1-5 scale
     verbosity?: number // 1-4 scale
   }): Memory {
-    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const id = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
     const scope = params.scope || MemoryScope.PROJECT
-    const valueJson = JSON.stringify(params.value)
+    // For JSON type column, we pass the value directly (SQLite will handle JSON conversion)
+    const valueJson = typeof params.value === 'string' ? params.value : JSON.stringify(params.value)
     const tagsJson = params.tags ? JSON.stringify(params.tags) : null
 
     // Check if memory exists
