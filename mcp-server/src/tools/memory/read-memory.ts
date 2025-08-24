@@ -1,7 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { z } from 'zod'
+import type { Memory } from '../../db/memory-db'
 import type { ToolMetadata } from '../types'
-import { memoryDb, MemoryScope, type Memory } from '../../db/memory-db'
+import { z } from 'zod'
+import { memoryDb, MemoryScope } from '../../db/memory-db'
 
 /**
  * Tool metadata for documentation generation
@@ -71,7 +72,7 @@ export async function handler(params: {
   try {
     // Get current working directory as project path
     const projectPath = process.cwd()
-    
+
     const scope = params.scope ? MemoryScope[params.scope.toUpperCase() as keyof typeof MemoryScope] : undefined
 
     if (params.scope && !scope) {
@@ -108,7 +109,8 @@ export async function handler(params: {
       let value = memory.value
       try {
         value = JSON.parse(memory.value)
-      } catch {}
+      }
+      catch {}
 
       return {
         key: memory.key,
@@ -129,7 +131,8 @@ export async function handler(params: {
           text: JSON.stringify(formatted, null, 2),
         }],
       }
-    } else {
+    }
+    else {
       const formatted = formatMemory(result)
       return {
         content: [{

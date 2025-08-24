@@ -76,9 +76,10 @@ AI Assistant ←→ MCP Server ←→ VSCode Gateway ←→ VSCode Internals
 
 ## 🧰 What You Get
 
-Token Saver MCP currently provides **31 production-ready tools** across four categories:
+Token Saver MCP currently provides **40 production-ready tools** across five categories:
 
 - **LSP Tools (14)** → `get_definition`, `get_references`, `rename_symbol`, `get_hover`, `find_implementations`, …  
+- **Memory Tools (9)** → `smart_resume` (86-99% token savings vs /resume), `write_memory`, `read_memory`, `search_memories` (full-text search), `export_memories`, `import_memories`, …  
 - **Browser Tools (8)** → `navigate_browser`, `execute_in_browser`, `take_screenshot`, `get_browser_console`, …  
 - **Testing Helpers (5)** → `test_react_component`, `test_api_endpoint`, `check_page_performance`, …  
 - **System Tools (4)** → `get_instructions`, `retrieve_buffer`, `get_supported_languages`, …  
@@ -89,11 +90,12 @@ Token Saver MCP currently provides **31 production-ready tools** across four cat
 
 ## 📊 Proven Results
 
-| Operation | Traditional (grep/search) | With Token Saver MCP | Time Saved |
-|-----------|----------------------------|----------------------|------------|
-| Find function definition | 5–10s, 5k tokens | **10ms, 50 tokens** | ☕ Coffee break |
-| Find all usages | 10–30s | **50ms** | 💭 Keep coding |
-| Rename symbol project-wide | Minutes | **100ms** | 🚀 Already done |
+| Operation | Traditional Method | With Token Saver MCP | Improvement |
+|-----------|-------------------|----------------------|-------------|
+| Find function definition | 5–10s, 5k tokens | **10ms, 50 tokens** | 100× faster |
+| Find all usages | 10–30s | **50ms** | 200× faster |
+| Rename symbol project-wide | Minutes | **100ms** | 1000× faster |
+| Resume context (/resume) | 5000+ tokens | **200-500 tokens** | 86-99% savings |
 
 **Token & Cost Savings (GPT-4 pricing):**
 
@@ -120,6 +122,46 @@ Example workflow:
 5. AI verifies fix in browser  
 
 ➡️ No more “please test this manually” — AI tests itself.
+
+---
+
+## 🧠 Smart Memory System (NEW!)
+
+Replace wasteful `/resume` commands with intelligent context restoration:
+
+### The Problem with /resume
+- Dumps entire conversation history (5000+ tokens)
+- Includes irrelevant tangents and discussions
+- Costs $0.15+ per resume
+- AI gets lost in the noise
+
+### The Solution: Smart Resume
+```javascript
+smart_resume()  // 200-500 tokens, focused context only
+```
+
+**Features:**
+- **86-99% token savings** compared to /resume
+- **Progressive disclosure**: Start minimal, expand as needed
+- **Full-text search**: Find memories by content, not just keys
+- **Importance levels** (1-5): Critical info persists, trivia can be dropped
+- **Verbosity levels** (1-4): Control detail granularity
+- **Time-based filtering**: Resume work from specific periods
+- **Export/Import**: Backup and share memory contexts between sessions
+
+**Example:**
+```javascript
+// Standard resume - just the essentials
+smart_resume()  
+
+// Include everything from last 3 days
+smart_resume({ daysAgo: 3, verbosity: 3 })
+
+// Critical items only for quick check-in
+smart_resume({ minImportance: 4, verbosity: 1 })
+```
+
+Memory is stored locally in SQLite (`~/.token-saver-mcp/memory.db`) with automatic initialization.
 
 ---
 

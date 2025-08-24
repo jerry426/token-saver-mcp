@@ -1,14 +1,13 @@
 # Token Saver MCP - Usage Guide
 
-> **📖 For Developers & AI Assistants:** This guide documents all available tools and usage patterns. AI assistants can access the latest version automatically using the `get_instructions` tool rather than reading this file directly.
-
 <!-- AUTO-GENERATED FILE - DO NOT EDIT DIRECTLY -->
-<!-- Generated from modular tool definitions on 2025-08-21T05:44:57.382Z -->
-<!-- Version: 1.1.0 -->
+<!-- Generated from modular tool definitions on 2025-08-24T04:55:14.276Z -->
+<!-- Version: 1.2.0 -->
 
 ## 🎯 Quick Overview
 
-Token Saver MCP provides **31 tools** organized by category:
+Token Saver MCP provides **40 tools** organized by category:
+- **9 Memory tools** - Persistent context management
 - **14 LSP tools** - Code navigation and intelligence
 - **8 CDP tools** - Browser automation and control
 - **5 Helper tools** - High-level testing utilities
@@ -23,6 +22,271 @@ Token Saver MCP provides **31 tools** organized by category:
 
 ## 🔧 Complete Tool Reference
 
+### Memory System - 9 Tools
+
+Persistent context management replacing /resume with 90% fewer tokens:
+
+---
+
+#### `write_memory`
+**Write persistent memory for context preservation**
+
+Store a memory for persistent context across sessions. Replaces inefficient /resume with targeted knowledge storage.
+
+**Parameters:**
+- `key`: Hierarchical key (e.g., "project.architecture", "current.task")
+- `value`: Any JSON-serializable value to store
+- `scope`: Memory scope: global, project, session, or shared (default: project)
+- `importance`: Importance level 1-5: 1=trivial, 2=low, 3=standard (default), 4=high, 5=critical
+- `verbosity`: Verbosity level 1-4: 1=minimal, 2=standard (default), 3=detailed, 4=comprehensive
+- `ttl`: Time-to-live in seconds (optional)
+- `tags`: Array of tags for categorization (optional)
+
+**Example:**
+```javascript
+write_memory({
+  key: "project.architecture",
+  value: "Next.js with Prisma and PostgreSQL",
+  importance: 5,  // Critical - must never be lost
+  verbosity: 2    // Standard - include in normal context
+})
+```
+
+**Tips:**
+- Use hierarchical keys for organization (project.*, current.*, discovered.*)
+- Store only essential context, not conversation history
+- Project scope is default and most common
+- TTL is useful for temporary findings
+- Overwrites existing memory with same key and scope
+
+---
+
+#### `smart_resume`
+**Smart context restoration from memories**
+
+Intelligently restore context from stored memories. Replaces /resume with 90% fewer tokens.
+
+**Parameters:**
+- `verbose`: Include detailed memory values (default: false)
+- `verbosity`: Filter by verbosity level 1-4: 1=minimal, 2=standard (default), 3=detailed, 4=comprehensive
+- `minImportance`: Only include memories at or above this importance 1-5: 1=trivial, 2=low (default), 3=standard, 4=high, 5=critical
+- `daysAgo`: Only return memories updated in last N days (optional)
+- `since`: ISO date string - only return memories updated after this date (optional)
+- `until`: ISO date string - only return memories updated before this date (optional)
+
+**Example:**
+```javascript
+smart_resume()  // Gets standard verbosity, low+ importance
+```
+
+**Tips:**
+- Use at the start of each session instead of /resume
+- Adjust verbosity based on needs: 1=critical only, 4=everything
+- Filter by importance to focus on what matters now
+- Standard settings (verbosity=2, minImportance=2) ideal for most sessions
+- Typically uses 200-500 tokens vs 5000+ for /resume
+- Progressive disclosure: start minimal, increase if needed
+
+---
+
+#### `search_memories`
+**Search memories using natural language queries**
+
+Full-text search across all memory keys and values to find relevant context.
+
+**Parameters:**
+- `query`: Natural language search query (supports phrases, wildcards, boolean operators)
+- `scope`: Filter by scope: global, project, session, or shared (optional)
+- `minImportance`: Only return memories at or above this importance 1-5 (optional)
+- `maxVerbosity`: Only return memories at or below this verbosity 1-4 (optional)
+- `limit`: Maximum number of results to return (optional, default: 50)
+
+**Example:**
+```javascript
+search_memories({
+  query: "token reduction 86%"
+})
+```
+
+**Tips:**
+- Results are ranked by relevance
+- Use quotes for exact phrase matching
+- Supports AND, OR, NOT operators
+- Falls back to LIKE search if FTS5 unavailable
+- Searches both keys and values
+
+---
+
+#### `read_memory`
+**Read persistent memories for context restoration**
+
+Retrieve stored memories by key or pattern. Essential for restoring context without token waste.
+
+**Parameters:**
+- `key`: Exact key or pattern with wildcards (*)
+- `scope`: Memory scope to search: global, project, session, or shared (optional)
+
+**Example:**
+```javascript
+read_memory({
+  key: "project.architecture"
+})
+```
+
+**Tips:**
+- Use wildcards (*) to read multiple related memories
+- Returns single memory for exact match, array for patterns
+- Automatically updates access time and count
+- Much more efficient than /resume command
+- Values are automatically parsed from JSON
+
+---
+
+#### `list_memories`
+**List and browse stored memories**
+
+List all stored memories with optional filtering by scope or project.
+
+**Parameters:**
+- `scope`: Filter by scope: global, project, session, or shared (optional)
+- `limit`: Maximum number of memories to return (optional)
+- `tags`: Filter by tags (optional)
+- `minImportance`: Only show memories at or above this importance 1-5 (optional)
+- `maxVerbosity`: Only show memories at or below this verbosity 1-4 (optional)
+- `daysAgo`: Only return memories updated in last N days (optional)
+- `since`: ISO date string - only return memories updated after this date (optional)
+- `until`: ISO date string - only return memories updated before this date (optional)
+
+**Example:**
+```javascript
+list_memories({
+  scope: "project"
+})
+```
+
+**Tips:**
+- Ordered by most recently accessed first
+- Shows memory keys, scopes, and access counts
+- Useful for discovering what context is available
+- Default shows all memories for current project
+
+---
+
+#### `import_memories`
+**Restore memories from JSON backup**
+
+Import memories from a JSON backup file with smart conflict resolution.
+
+**Parameters:**
+- `file`: Path to JSON file to import
+- `mode`: Import mode: merge (update existing), replace (overwrite all), or skip (only new)
+- `onConflict`: Conflict resolution: newer, older, higher_importance, or skip
+- `scope`: Override scope for all imported memories (optional)
+- `minImportance`: Only import memories at or above this importance (optional)
+- `keyPrefix`: Prefix to add to all imported keys (optional)
+- `dryRun`: Preview changes without importing (default: false)
+- `backup`: Create backup before importing (default: true)
+
+**Example:**
+```javascript
+import_memories({
+  file: "~/Dropbox/token-saver-backups/memories-2025-01-24.json",
+  mode: "merge",
+  onConflict: "newer"
+})
+```
+
+**Tips:**
+- Always preview with dryRun: true first
+- Automatic backup created before import by default
+- Use keyPrefix to namespace imported memories
+- Conflict resolution compares timestamps and importance
+
+---
+
+#### `export_memories`
+**Export memories to JSON for backup or sharing**
+
+Export memories to a portable JSON file for backup, sharing, or migration.
+
+**Parameters:**
+- `output`: Output path: "auto" for automatic, or specify full path
+- `scope`: Filter by scope: global, project, session, or shared (optional)
+- `pattern`: Filter by key pattern with wildcards (optional)
+- `minImportance`: Only export memories at or above this importance 1-5 (optional)
+- `maxVerbosity`: Only export memories at or below this verbosity 1-4 (optional)
+- `daysAgo`: Only export memories updated in last N days (optional)
+- `since`: ISO date string - only export memories updated after this date (optional)
+- `until`: ISO date string - only export memories updated before this date (optional)
+- `pretty`: Format JSON for human readability (default: true)
+- `includeMetadata`: Include timestamps and access counts (default: true)
+
+**Example:**
+```javascript
+export_memories({
+  output: "auto"  // Automatically finds Dropbox/iCloud/etc
+})
+```
+
+**Tips:**
+- Use "auto" output to automatically save to cloud storage if available
+- Export creates timestamped files to avoid overwrites
+- JSON format preserves all metadata for perfect restoration
+- Filter exports to share only relevant context
+
+---
+
+#### `delete_memory`
+**Remove a memory from storage**
+
+Delete stored memories by key or pattern.
+
+**Parameters:**
+- `key`: Key to delete (or pattern with * wildcards when pattern=true)
+- `scope`: Memory scope: global, project, session, or shared (optional)
+- `pattern`: Enable pattern mode to delete multiple memories (optional)
+
+**Example:**
+```javascript
+delete_memory({
+  key: "temporary.debug_flag"
+})
+```
+
+**Tips:**
+- Use for cleaning up temporary or outdated memories
+- Cannot be undone - memory is permanently deleted
+- Returns true if memory was deleted, false if not found
+
+---
+
+#### `configure_memory`
+**Configure memory system settings**
+
+Configure memory system defaults and behavior for optimal token efficiency.
+
+**Parameters:**
+- `action`: Action to perform: get, set, reset, or profile
+- `setting`: Setting name when using set action
+- `value`: Value to set when using set action
+- `profile`: Apply preset profile: minimal, standard, detailed, or comprehensive
+
+**Example:**
+```javascript
+configure_memory({
+  action: "get"
+})
+```
+
+**Tips:**
+- Use profiles for quick configuration changes
+- Minimal profile saves most tokens but loses detail
+- Comprehensive profile preserves everything but uses more tokens
+- Settings persist across sessions in ~/.token-saver-mcp/config.json
+
+---
+
+
 ### Code Navigation (LSP) - 14 Tools
 
 Tools for navigating and understanding code using Language Server Protocol:
@@ -33,6 +297,12 @@ Tools for navigating and understanding code using Language Server Protocol:
 **Safely rename variables, functions, classes across entire codebase**
 
 Rename a symbol across the workspace.
+
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
+- `newName`: The new name for the symbol
 
 **Example:**
 ```javascript
@@ -62,6 +332,11 @@ rename_symbol({
 
 Get the type definition location of a symbol.
 
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
+
 **Example:**
 ```javascript
 get_type_definition({
@@ -89,6 +364,9 @@ get_type_definition({
 
 Get semantic tokens (detailed syntax highlighting) for a document.
 
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+
 **Example:**
 ```javascript
 get_semantic_tokens({
@@ -113,6 +391,11 @@ get_semantic_tokens({
 **Find everywhere a symbol is used across the entire codebase**
 
 Find all references to a symbol.
+
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
 
 **Example:**
 ```javascript
@@ -141,6 +424,11 @@ get_references({
 
 Get hover information for a symbol at a given position.
 
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
+
 **Example:**
 ```javascript
 get_hover({
@@ -168,6 +456,9 @@ get_hover({
 
 Get all symbols (classes, methods, functions, variables, etc.) in a document with hierarchical structure.
 
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+
 **Example:**
 ```javascript
 get_document_symbols({
@@ -192,6 +483,9 @@ get_document_symbols({
 **Get all errors, warnings, and suggestions from language servers**
 
 Get diagnostics (errors, warnings, info, hints) for a file or all files.
+
+**Parameters:**
+- `uri`: Optional file URI. If not provided, gets diagnostics for all files in workspace
 
 **Example:**
 ```javascript
@@ -218,6 +512,11 @@ get_diagnostics({
 
 Get the definition location of a symbol.
 
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
+
 **Example:**
 ```javascript
 get_definition({
@@ -242,6 +541,11 @@ get_definition({
 **Get IntelliSense completion suggestions at cursor position**
 
 Get code completion suggestions for a given position in a document.
+
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
 
 **Example:**
 ```javascript
@@ -270,6 +574,11 @@ get_completions({
 
 Get available code actions (quick fixes, refactorings) at a given position.
 
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
+
 **Example:**
 ```javascript
 get_code_actions({
@@ -296,6 +605,12 @@ get_code_actions({
 **Trace function call relationships - who calls this function or what does it call**
 
 Trace function calls - find who calls a function (incoming) or what a function calls (outgoing).
+
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
+- `direction`: Direction: "incoming" for callers, "outgoing" for callees (default: incoming)
 
 **Example:**
 ```javascript
@@ -325,6 +640,16 @@ get_call_hierarchy({
 
 Search for text patterns across all files using ripgrep with intelligent result buffering
 
+**Parameters:**
+- `query`: The text pattern to search for
+- `useRegExp`: Use regular expression pattern (default: false)
+- `isCaseSensitive`: Case sensitive search (default: false)
+- `matchWholeWord`: Match whole word only (default: false)
+- `maxResults`: Maximum number of results to return immediately (default: 20)
+- `includes`: Glob patterns to include (e.g., ["**/*.ts"])
+- `excludes`: Glob patterns to exclude (default: node_modules, .git, dist)
+- `includeContext`: Include surrounding context lines (default: 0)
+
 **Example:**
 ```javascript
 find_text({
@@ -352,6 +677,9 @@ find_text({
 
 Find symbols (functions, classes, methods, variables) across the workspace using semantic search
 
+**Parameters:**
+- `query`: The symbol name or pattern to search for
+
 **Example:**
 ```javascript
 find_symbols({
@@ -377,6 +705,11 @@ find_symbols({
 **Find all concrete implementations of interfaces, abstract classes, or virtual methods**
 
 Find all implementations of an interface or abstract class.
+
+**Parameters:**
+- `uri`: The file URI in encoded format (e.g., "file:///path/to/file.ts")
+- `line`: The line number (0-based)
+- `character`: The character position (0-based)
 
 **Example:**
 ```javascript
@@ -412,6 +745,10 @@ Tools for browser automation using Chrome DevTools Protocol:
 
 Wait for an element to appear in the DOM.
 
+**Parameters:**
+- `selector`: CSS selector for the element to wait for
+- `timeout`: Timeout in milliseconds (default: 5000)
+
 **Example:**
 ```javascript
 // Navigate to dynamic page
@@ -441,6 +778,10 @@ click_element({ selector: "#menu-button" })
 
 Type text into an input field in the browser using a CSS selector.
 
+**Parameters:**
+- `selector`: CSS selector for the input field (e.g., "#username", "input[name='email']")
+- `text`: Text to type into the input field
+
 **Example:**
 ```javascript
 type_in_browser({ selector: "#username", text: "john.doe" })
@@ -463,21 +804,33 @@ type_in_browser({ selector: "#username", text: "john.doe" })
 
 Take a screenshot of the current browser page.
 
+**Parameters:**
+- `downsample`: Whether to downsample the image to reduce token usage (default: true)
+- `fullPage`: Whether to capture the full page (default: false)
+- `metadataOnly`: Return only size metadata without the actual image data (default: false)
+- `quality`: Quality preset: low (~12K tokens), medium (~43K tokens), high (~55K tokens), ultra (~70K tokens), custom (default: low)
+- `customWidth`: Custom width in pixels when using quality: "custom" (default: 1200)
+- `customQuality`: Custom JPEG quality 0-100 when using quality: "custom" (default: 85)
+
 **Example:**
 ```javascript
-// Navigate to page first
-navigate_browser({ url: "http://localhost:3000" })
+// Check size before taking screenshot
+const metadata = take_screenshot({ metadataOnly: true })
+// Returns estimates for all quality levels
 
-// Take screenshot
-take_screenshot({})
+// Try different quality levels
+take_screenshot({ quality: 'low' })    // ~10K tokens, fast
+take_screenshot({ quality: 'medium' }) // ~25K tokens, balanced
+take_screenshot({ quality: 'high' })   // ~40K tokens, detailed
 ```
 
 **Tips:**
-- Screenshot is returned as base64 PNG data
+- Use metadataOnly: true to check size before capturing
+- Screenshot is downsampled by default to prevent token limits
+- Downsampled images are JPEG (70% quality, max 800px width)
+- Full resolution PNG available with downsample: false (check size first!)
 - Captures full visible viewport
-- Use after navigation to verify page loaded
-- Helpful for debugging layout issues
-- Can be saved or displayed by AI assistants
+- Metadata includes token counts and compression ratios
 
 **Performance:**
 - Speed: 200-800ms (depends on page complexity)
@@ -488,6 +841,9 @@ take_screenshot({})
 **Navigate to URL and wait**
 
 Navigate the browser to a specific URL and wait for page load.
+
+**Parameters:**
+- `url`: URL to navigate to (e.g., "http://localhost:3000")
 
 **Example:**
 ```javascript
@@ -535,6 +891,10 @@ get_dom_snapshot({})
 
 Get console messages from the browser (log, error, warning, info, debug). Captures all console output since connection.
 
+**Parameters:**
+- `filter`: Optional filter for message type: log, error, warning, info, debug
+- `clear`: Clear console messages after retrieving (default: false)
+
 **Example:**
 ```javascript
 get_browser_console({})
@@ -557,6 +917,10 @@ get_browser_console({})
 
 Execute JavaScript code in the browser context via Chrome DevTools Protocol. Requires Chrome to be running or will launch it automatically.
 
+**Parameters:**
+- `expression`: JavaScript expression to execute in the browser
+- `url`: Optional URL to navigate to before executing (e.g., "https://example.com")
+
 **Example:**
 ```javascript
 execute_in_browser({ expression: "document.title" })
@@ -578,6 +942,9 @@ execute_in_browser({ expression: "document.title" })
 **Click any element using CSS selector**
 
 Click an element in the browser using a CSS selector.
+
+**Parameters:**
+- `selector`: CSS selector for the element to click (e.g., "#submit-button", ".menu-item")
 
 **Example:**
 ```javascript
@@ -730,6 +1097,9 @@ Complete page performance analysis and optimization workflow with Core Web Vital
 
 Retrieve the full data from a buffered response using its buffer ID
 
+**Parameters:**
+- `bufferId`: The buffer ID returned in a buffered response
+
 **Example:**
 ```javascript
 retrieve_buffer({ bufferId: "search_12345" })
@@ -871,6 +1241,9 @@ test_api_endpoint({
 ## 🎯 Quick Decision Tree
 
 ```
+Starting new session?   → smart_resume (instead of /resume)
+Saving context?        → write_memory with importance/verbosity
+Finding past info?     → read_memory or list_memories
 Finding code?           → search_text → get_definition → get_references
 Understanding code?     → get_hover → get_document_symbols
 Refactoring?           → rename_symbol (after get_references)
@@ -928,7 +1301,7 @@ Performance issues?    → check_page_performance
 - **90-99% token savings** on every request
 - **Always accurate** - semantic understanding, not text matching
 
-This documentation is auto-generated from **31 tools** across **4 categories**. Each tool's documentation lives with its implementation, ensuring accuracy and maintainability.
+This documentation is auto-generated from **40 tools** across **5 categories**. Each tool's documentation lives with its implementation, ensuring accuracy and maintainability.
 
 ---
-*Generated by [Token Saver MCP](https://github.com/jerry426/token-saver-mcp) v1.1.0*
+*Generated by [Token Saver MCP](https://github.com/jerry426/token-saver-mcp) v1.2.0*

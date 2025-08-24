@@ -17,6 +17,8 @@ export interface Memory {
   ttl?: number
   tags?: string // JSON array
   access_count: number
+  importance?: number // 1-5 scale: 1=trivial, 3=standard, 5=critical
+  verbosity?: number // 1-4: minimal, standard, detailed, comprehensive
 }
 
 export enum MemoryScope {
@@ -24,6 +26,21 @@ export enum MemoryScope {
   PROJECT = 'project',
   SESSION = 'session',
   SHARED = 'shared',
+}
+
+export enum VerbosityLevel {
+  MINIMAL = 1, // Just critical project state
+  STANDARD = 2, // + key decisions and rationale
+  DETAILED = 3, // + implementation details
+  COMPREHENSIVE = 4, // + conversation context and examples
+}
+
+export enum ImportanceLevel {
+  TRIVIAL = 1, // Nice to have, can be dropped
+  LOW = 2, // Helpful but not essential
+  STANDARD = 3, // Normal importance (default)
+  HIGH = 4, // Important to preserve
+  CRITICAL = 5, // Must never be lost
 }
 
 class MemoryDatabase {
@@ -65,9 +82,22 @@ class MemoryDatabase {
         created_by TEXT,
         ttl INTEGER,
         tags TEXT,
-        access_count INTEGER DEFAULT 0
+        access_count INTEGER DEFAULT 0,
+        importance INTEGER DEFAULT 3,
+        verbosity INTEGER DEFAULT 2
       )
     `)
+
+    // Add columns to existing tables (migration) - do this first!
+    try {
+      this.db.exec(`ALTER TABLE memories ADD COLUMN importance INTEGER DEFAULT 3`)
+    }
+    catch {} // Column may already exist
+
+    try {
+      this.db.exec(`ALTER TABLE memories ADD COLUMN verbosity INTEGER DEFAULT 2`)
+    }
+    catch {} // Column may already exist
 
     // Create indexes for performance
     this.db.exec(`
@@ -76,7 +106,12 @@ class MemoryDatabase {
       CREATE INDEX IF NOT EXISTS idx_project ON memories(project_path);
       CREATE INDEX IF NOT EXISTS idx_session ON memories(session_id);
       CREATE INDEX IF NOT EXISTS idx_scope_project ON memories(scope, project_path);
+      CREATE INDEX IF NOT EXISTS idx_importance ON memories(importance);
+      CREATE INDEX IF NOT EXISTS idx_verbosity ON memories(verbosity);
     `)
+
+    // Create FTS5 virtual table for full-text search
+    this.initFTS()
 
     // Create trigger to update updated_at
     this.db.exec(`
@@ -92,6 +127,58 @@ class MemoryDatabase {
     console.error(`[MemoryDB] Initialized database at ${this.dbPath}`)
   }
 
+  private initFTS() {
+    try {
+      // Create FTS5 virtual table
+      this.db.exec(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts 
+        USING fts5(key, value, content='memories', content_rowid='rowid')
+      `)
+
+      // Populate FTS table with existing data
+      const existingCount = this.db.prepare('SELECT COUNT(*) as count FROM memories').get() as { count: number }
+      const ftsCount = this.db.prepare('SELECT COUNT(*) as count FROM memories_fts').pluck().get() as number || 0
+
+      if (existingCount.count > 0 && ftsCount === 0) {
+        // Initial population
+        this.db.exec(`
+          INSERT INTO memories_fts(rowid, key, value) 
+          SELECT rowid, key, value FROM memories
+        `)
+      }
+
+      // Create triggers to keep FTS in sync
+      this.db.exec(`
+        CREATE TRIGGER IF NOT EXISTS memories_ai 
+        AFTER INSERT ON memories 
+        BEGIN
+          INSERT INTO memories_fts(rowid, key, value) 
+          VALUES (new.rowid, new.key, new.value);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS memories_ad 
+        AFTER DELETE ON memories 
+        BEGIN
+          DELETE FROM memories_fts WHERE rowid = old.rowid;
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS memories_au 
+        AFTER UPDATE ON memories 
+        BEGIN
+          UPDATE memories_fts 
+          SET key = new.key, value = new.value 
+          WHERE rowid = new.rowid;
+        END;
+      `)
+
+      console.error('[MemoryDB] FTS5 search initialized')
+    }
+    catch (error: any) {
+      // FTS5 might not be available in some SQLite builds
+      console.warn('[MemoryDB] FTS5 initialization failed (search will be unavailable):', error.message)
+    }
+  }
+
   // Write a memory
   write(params: {
     key: string
@@ -102,6 +189,8 @@ class MemoryDatabase {
     created_by?: string
     ttl?: number
     tags?: string[]
+    importance?: number // 1-5 scale
+    verbosity?: number // 1-4 scale
   }): Memory {
     const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const scope = params.scope || MemoryScope.PROJECT
@@ -120,17 +209,25 @@ class MemoryDatabase {
       this.db.prepare(`
         UPDATE memories 
         SET value = ?, updated_at = datetime('now'), accessed_at = datetime('now'),
-            access_count = access_count + 1, ttl = ?, tags = ?
+            access_count = access_count + 1, ttl = ?, tags = ?, 
+            importance = ?, verbosity = ?
         WHERE id = ?
-      `).run(valueJson, params.ttl, tagsJson, existing.id)
+      `).run(
+        valueJson,
+        params.ttl,
+        tagsJson,
+        params.importance ?? ImportanceLevel.STANDARD,
+        params.verbosity ?? VerbosityLevel.STANDARD,
+        existing.id,
+      )
 
       return this.read({ key: params.key, scope, project_path: params.project_path }) as Memory
     }
     else {
       // Insert new memory
       this.db.prepare(`
-        INSERT INTO memories (id, key, value, scope, project_path, session_id, created_by, ttl, tags)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO memories (id, key, value, scope, project_path, session_id, created_by, ttl, tags, importance, verbosity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
         params.key,
@@ -141,6 +238,8 @@ class MemoryDatabase {
         params.created_by,
         params.ttl,
         tagsJson,
+        params.importance ?? ImportanceLevel.STANDARD,
+        params.verbosity ?? VerbosityLevel.STANDARD,
       )
 
       return this.db.prepare('SELECT * FROM memories WHERE id = ?').get(id) as Memory
@@ -215,6 +314,86 @@ class MemoryDatabase {
     return null
   }
 
+  // Read memories with verbosity and importance filtering
+  readFiltered(params: {
+    key?: string
+    pattern?: string
+    scope?: MemoryScope
+    project_path?: string
+    session_id?: string
+    minVerbosity?: number // Only return memories at or below this verbosity level
+    minImportance?: number // Only return memories at or above this importance level
+    daysAgo?: number // Only return memories updated in last N days
+    since?: string // ISO date string - only return memories updated after this date
+    until?: string // ISO date string - only return memories updated before this date
+  }): Memory[] {
+    let query = 'SELECT * FROM memories WHERE 1=1'
+    const queryParams: any[] = []
+
+    if (params.pattern || params.key?.includes('*')) {
+      const pattern = (params.pattern || params.key || '').replace(/\*/g, '%')
+      query += ' AND key LIKE ?'
+      queryParams.push(pattern)
+    }
+    else if (params.key) {
+      query += ' AND key = ?'
+      queryParams.push(params.key)
+    }
+
+    if (params.scope) {
+      query += ' AND scope = ?'
+      queryParams.push(params.scope)
+    }
+
+    if (params.project_path) {
+      query += ' AND project_path = ?'
+      queryParams.push(params.project_path)
+    }
+
+    // Apply verbosity filter
+    if (params.minVerbosity !== undefined) {
+      query += ' AND verbosity <= ?'
+      queryParams.push(params.minVerbosity)
+    }
+
+    // Apply importance filter
+    if (params.minImportance !== undefined) {
+      query += ' AND importance >= ?'
+      queryParams.push(params.minImportance)
+    }
+
+    // Apply date filters
+    if (params.daysAgo !== undefined) {
+      query += ' AND updated_at >= datetime(\'now\', ?)'
+      queryParams.push(`-${params.daysAgo} days`)
+    }
+
+    if (params.since) {
+      query += ' AND updated_at >= ?'
+      queryParams.push(params.since)
+    }
+
+    if (params.until) {
+      query += ' AND updated_at <= ?'
+      queryParams.push(params.until)
+    }
+
+    query += ' ORDER BY importance DESC, updated_at DESC'
+
+    const results = this.db.prepare(query).all(...queryParams) as Memory[]
+
+    // Update access for all results
+    results.forEach((r) => {
+      this.db.prepare(`
+        UPDATE memories 
+        SET accessed_at = datetime('now'), access_count = access_count + 1
+        WHERE id = ?
+      `).run(r.id)
+    })
+
+    return results
+  }
+
   // List memories
   list(params: {
     scope?: MemoryScope
@@ -272,6 +451,126 @@ class MemoryDatabase {
 
     const result = this.db.prepare(query).run(...queryParams)
     return result.changes > 0
+  }
+
+  // Delete memories by pattern
+  deletePattern(params: {
+    pattern: string
+    scope?: MemoryScope
+    project_path?: string
+  }): number {
+    // Convert wildcard pattern to SQL LIKE pattern
+    const sqlPattern = params.pattern.replace(/\*/g, '%')
+
+    let query = 'DELETE FROM memories WHERE key LIKE ?'
+    const queryParams: any[] = [sqlPattern]
+
+    if (params.scope) {
+      query += ' AND scope = ?'
+      queryParams.push(params.scope)
+    }
+
+    if (params.project_path) {
+      query += ' AND project_path = ?'
+      queryParams.push(params.project_path)
+    }
+
+    const result = this.db.prepare(query).run(...queryParams)
+    return result.changes
+  }
+
+  // Full-text search memories
+  searchMemories(params: {
+    query: string
+    scope?: MemoryScope
+    project_path?: string
+    minImportance?: number
+    maxVerbosity?: number
+    limit?: number
+  }): Memory[] {
+    try {
+      // Build the SQL query
+      let sql = `
+        SELECT m.*, -fts.rank as rank
+        FROM memories m
+        JOIN memories_fts fts ON m.rowid = fts.rowid
+        WHERE fts MATCH ?
+      `
+      const queryParams: any[] = [params.query]
+
+      if (params.scope) {
+        sql += ' AND m.scope = ?'
+        queryParams.push(params.scope)
+      }
+
+      if (params.project_path) {
+        sql += ' AND m.project_path = ?'
+        queryParams.push(params.project_path)
+      }
+
+      if (params.minImportance) {
+        sql += ' AND m.importance >= ?'
+        queryParams.push(params.minImportance)
+      }
+
+      if (params.maxVerbosity) {
+        sql += ' AND m.verbosity <= ?'
+        queryParams.push(params.maxVerbosity)
+      }
+
+      sql += ' ORDER BY rank LIMIT ?'
+      queryParams.push(params.limit || 50)
+
+      const results = this.db.prepare(sql).all(...queryParams) as Memory[]
+
+      // Update access count and timestamp
+      for (const memory of results) {
+        this.db.prepare(`
+          UPDATE memories 
+          SET access_count = access_count + 1,
+              accessed_at = datetime('now')
+          WHERE id = ?
+        `).run(memory.id)
+      }
+
+      return results
+    }
+    catch (error: any) {
+      // If FTS is not available, fall back to LIKE search
+      console.warn('[MemoryDB] FTS search failed, falling back to LIKE search:', error.message)
+
+      const likePattern = `%${params.query}%`
+      let sql = `
+        SELECT * FROM memories
+        WHERE (key LIKE ? OR value LIKE ?)
+      `
+      const queryParams: any[] = [likePattern, likePattern]
+
+      if (params.scope) {
+        sql += ' AND scope = ?'
+        queryParams.push(params.scope)
+      }
+
+      if (params.project_path) {
+        sql += ' AND project_path = ?'
+        queryParams.push(params.project_path)
+      }
+
+      if (params.minImportance) {
+        sql += ' AND importance >= ?'
+        queryParams.push(params.minImportance)
+      }
+
+      if (params.maxVerbosity) {
+        sql += ' AND verbosity <= ?'
+        queryParams.push(params.maxVerbosity)
+      }
+
+      sql += ' ORDER BY updated_at DESC LIMIT ?'
+      queryParams.push(params.limit || 50)
+
+      return this.db.prepare(sql).all(...queryParams) as Memory[]
+    }
   }
 
   // Clean expired memories

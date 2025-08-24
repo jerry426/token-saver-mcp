@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { z } from 'zod'
 import type { ToolMetadata } from '../types'
+import { z } from 'zod'
 import { memoryDb, MemoryScope } from '../../db/memory-db'
 
 /**
@@ -10,14 +10,15 @@ export const metadata: ToolMetadata = {
   name: 'delete_memory',
   title: 'Delete Memory',
   category: 'memory' as const,
-  description: 'Delete a stored memory by key.',
+  description: 'Delete stored memories by key or pattern.',
 
   docs: {
     brief: 'Remove a memory from storage',
 
     parameters: {
-      key: 'Key of the memory to delete',
+      key: 'Key to delete (or pattern with * wildcards when pattern=true)',
       scope: 'Memory scope: global, project, session, or shared (optional)',
+      pattern: 'Enable pattern mode to delete multiple memories (optional)',
     },
 
     examples: [
@@ -25,6 +26,13 @@ export const metadata: ToolMetadata = {
         title: 'Delete a specific memory',
         code: `delete_memory({
   key: "temporary.debug_flag"
+})`,
+      },
+      {
+        title: 'Delete all test memories',
+        code: `delete_memory({
+  key: "test*",
+  pattern: true
 })`,
       },
       {
@@ -58,11 +66,12 @@ export const metadata: ToolMetadata = {
 export async function handler(params: {
   key: string
   scope?: 'global' | 'project' | 'session' | 'shared'
+  pattern?: boolean
 }): Promise<any> {
   try {
     // Get current working directory as project path
     const projectPath = process.cwd()
-    
+
     const scope = params.scope ? MemoryScope[params.scope.toUpperCase() as keyof typeof MemoryScope] : undefined
 
     if (params.scope && !scope) {
@@ -74,20 +83,40 @@ export async function handler(params: {
       }
     }
 
-    // Delete the memory
-    const deleted = memoryDb.delete({
-      key: params.key,
-      scope,
-      project_path: (!scope || scope === MemoryScope.PROJECT) ? projectPath : undefined,
-    })
+    // Delete the memory/memories
+    if (params.pattern) {
+      // Pattern-based deletion
+      const count = memoryDb.deletePattern({
+        pattern: params.key,
+        scope,
+        project_path: (!scope || scope === MemoryScope.PROJECT) ? projectPath : undefined,
+      })
 
-    return {
-      content: [{
-        type: 'text',
-        text: deleted 
-          ? `✅ Memory deleted: ${params.key}`
-          : `❌ Memory not found: ${params.key}`,
-      }],
+      return {
+        content: [{
+          type: 'text',
+          text: count > 0
+            ? `✅ Deleted ${count} memories matching pattern: ${params.key}`
+            : `❌ No memories found matching pattern: ${params.key}`,
+        }],
+      }
+    }
+    else {
+      // Single key deletion
+      const deleted = memoryDb.delete({
+        key: params.key,
+        scope,
+        project_path: (!scope || scope === MemoryScope.PROJECT) ? projectPath : undefined,
+      })
+
+      return {
+        content: [{
+          type: 'text',
+          text: deleted
+            ? `✅ Memory deleted: ${params.key}`
+            : `❌ Memory not found: ${params.key}`,
+        }],
+      }
     }
   }
   catch (error: any) {
@@ -107,8 +136,9 @@ export function register(server: McpServer) {
       title: metadata.title,
       description: metadata.description,
       inputSchema: {
-        key: z.string().describe('Key of the memory to delete'),
+        key: z.string().describe('Key to delete (or pattern with * wildcards)'),
         scope: z.enum(['global', 'project', 'session', 'shared']).optional().describe('Memory scope'),
+        pattern: z.boolean().optional().describe('Enable pattern mode for bulk deletion'),
       },
     },
     handler,

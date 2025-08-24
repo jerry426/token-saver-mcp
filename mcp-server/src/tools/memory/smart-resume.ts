@@ -1,7 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { z } from 'zod'
+import type { Memory } from '../../db/memory-db'
 import type { ToolMetadata } from '../types'
-import { memoryDb, MemoryScope, type Memory } from '../../db/memory-db'
+import { z } from 'zod'
+import { memoryDb, MemoryScope } from '../../db/memory-db'
+import { loadConfig } from './configure-memory'
 
 /**
  * Tool metadata for documentation generation
@@ -17,17 +19,46 @@ export const metadata: ToolMetadata = {
 
     parameters: {
       verbose: 'Include detailed memory values (default: false)',
+      verbosity: 'Filter by verbosity level 1-4: 1=minimal, 2=standard (default), 3=detailed, 4=comprehensive',
+      minImportance: 'Only include memories at or above this importance 1-5: 1=trivial, 2=low (default), 3=standard, 4=high, 5=critical',
+      daysAgo: 'Only return memories updated in last N days (optional)',
+      since: 'ISO date string - only return memories updated after this date (optional)',
+      until: 'ISO date string - only return memories updated before this date (optional)',
     },
 
     examples: [
       {
-        title: 'Quick resume with summary',
-        code: `smart_resume()`,
+        title: 'Standard resume for new session',
+        code: `smart_resume()  // Gets standard verbosity, low+ importance`,
       },
       {
-        title: 'Detailed resume with all values',
+        title: 'Minimal context for quick check-in',
         code: `smart_resume({
-  verbose: true
+  verbosity: 1,      // Minimal verbosity
+  minImportance: 4   // High+ importance only
+})`,
+      },
+      {
+        title: 'Comprehensive context with discussions',
+        code: `smart_resume({
+  verbosity: 4,      // Include all details and discussions
+  minImportance: 1,  // Include everything, even trivial
+  verbose: true      // Show raw memory values too
+})`,
+      },
+      {
+        title: 'Resume recent work from last 3 days',
+        code: `smart_resume({
+  daysAgo: 3,
+  verbosity: 2
+})`,
+      },
+      {
+        title: 'Resume specific date range',
+        code: `smart_resume({
+  since: "2025-01-15T00:00:00Z",
+  until: "2025-01-20T23:59:59Z",
+  minImportance: 3
 })`,
       },
     ],
@@ -40,10 +71,11 @@ export const metadata: ToolMetadata = {
 
     tips: [
       'Use at the start of each session instead of /resume',
-      'Provides focused briefing with only relevant context',
-      'Shows current task, project info, and recent discoveries',
+      'Adjust verbosity based on needs: 1=critical only, 4=everything',
+      'Filter by importance to focus on what matters now',
+      'Standard settings (verbosity=2, minImportance=2) ideal for most sessions',
       'Typically uses 200-500 tokens vs 5000+ for /resume',
-      'Builds on memories from previous sessions',
+      'Progressive disclosure: start minimal, increase if needed',
     ],
 
     meta: {
@@ -56,34 +88,64 @@ export const metadata: ToolMetadata = {
 // Tool handler
 export async function handler(params: {
   verbose?: boolean
+  verbosity?: number // 1-4: Filter memories by verbosity level
+  minImportance?: number // 1-5: Only include memories at or above this importance
+  daysAgo?: number // Only return memories updated in last N days
+  since?: string // ISO date string - only return memories updated after this date
+  until?: string // ISO date string - only return memories updated before this date
 } = {}): Promise<any> {
   try {
     const projectPath = process.cwd()
-    
-    // Fetch different categories of memories
-    const projectMemories = memoryDb.read({
+    const config = loadConfig()
+
+    // Use configuration defaults if not specified
+    const verbosityFilter = params.verbosity ?? config.smartResumeMaxVerbosity
+    const importanceFilter = params.minImportance ?? config.smartResumeMinImportance
+
+    // Fetch different categories of memories with filtering
+    const projectMemories = memoryDb.readFiltered({
       pattern: 'project.*',
       scope: MemoryScope.PROJECT,
       project_path: projectPath,
-    }) as Memory[] || []
+      minVerbosity: verbosityFilter,
+      minImportance: importanceFilter,
+      daysAgo: params.daysAgo,
+      since: params.since,
+      until: params.until,
+    }) || []
 
-    const currentMemories = memoryDb.read({
+    const currentMemories = memoryDb.readFiltered({
       pattern: 'current.*',
       scope: MemoryScope.PROJECT,
       project_path: projectPath,
-    }) as Memory[] || []
+      minVerbosity: verbosityFilter,
+      minImportance: importanceFilter,
+      daysAgo: params.daysAgo,
+      since: params.since,
+      until: params.until,
+    }) || []
 
-    const discoveredMemories = memoryDb.read({
+    const discoveredMemories = memoryDb.readFiltered({
       pattern: 'discovered.*',
       scope: MemoryScope.PROJECT,
       project_path: projectPath,
-    }) as Memory[] || []
+      minVerbosity: verbosityFilter,
+      minImportance: importanceFilter,
+      daysAgo: params.daysAgo,
+      since: params.since,
+      until: params.until,
+    }) || []
 
-    const nextMemories = memoryDb.read({
+    const nextMemories = memoryDb.readFiltered({
       pattern: 'next.*',
       scope: MemoryScope.PROJECT,
       project_path: projectPath,
-    }) as Memory[] || []
+      minVerbosity: verbosityFilter,
+      minImportance: importanceFilter,
+      daysAgo: params.daysAgo,
+      since: params.since,
+      until: params.until,
+    }) || []
 
     // Get database stats
     const stats = memoryDb.getStats()
@@ -92,7 +154,8 @@ export async function handler(params: {
     const parseMemory = (memory: Memory) => {
       try {
         return JSON.parse(memory.value)
-      } catch {
+      }
+      catch {
         return memory.value
       }
     }
@@ -106,25 +169,25 @@ export async function handler(params: {
     }
 
     // Process project memories
-    projectMemories.forEach(m => {
+    projectMemories.forEach((m) => {
       const key = m.key.replace('project.', '')
       contextSummary.project_context[key] = parseMemory(m)
     })
 
     // Process current work
-    currentMemories.forEach(m => {
+    currentMemories.forEach((m) => {
       const key = m.key.replace('current.', '')
       contextSummary.current_work[key] = parseMemory(m)
     })
 
     // Process discoveries
-    discoveredMemories.forEach(m => {
+    discoveredMemories.forEach((m) => {
       const key = m.key.replace('discovered.', '')
       contextSummary.discoveries[key] = parseMemory(m)
     })
 
     // Process next steps
-    nextMemories.forEach(m => {
+    nextMemories.forEach((m) => {
       const key = m.key.replace('next.', '')
       contextSummary.next_steps[key] = parseMemory(m)
     })
@@ -176,13 +239,18 @@ export async function handler(params: {
     briefing += `**📊 Memory Stats:**\n`
     briefing += `• Total memories: ${stats.total_memories}\n`
     briefing += `• Project memories: ${stats.by_scope.project || 0}\n`
-    briefing += `• Database size: ${(stats.database_size / 1024).toFixed(1)} KB\n\n`
+    briefing += `• Database size: ${(stats.database_size / 1024).toFixed(1)} KB\n`
+
+    // Show filtering info if applied
+    const verbosityLabel = ['', 'Minimal', 'Standard', 'Detailed', 'Comprehensive'][verbosityFilter]
+    const importanceLabel = ['', 'Trivial', 'Low', 'Standard', 'High', 'Critical'][importanceFilter]
+    briefing += `• Filter: ${verbosityLabel} verbosity, ${importanceLabel}+ importance\n\n`
 
     // Estimate token usage
     const estimatedTokens = Math.ceil(briefing.length / 4)
     briefing += `**🎯 Context Efficiency:**\n`
     briefing += `• Estimated tokens: ~${estimatedTokens} (vs ~5000+ with /resume)\n`
-    briefing += `• Token savings: ~${Math.round((1 - estimatedTokens/5000) * 100)}%\n`
+    briefing += `• Token savings: ~${Math.round((1 - estimatedTokens / 5000) * 100)}%\n`
 
     // Add verbose details if requested
     if (params.verbose) {
@@ -217,6 +285,11 @@ export function register(server: McpServer) {
       description: metadata.description,
       inputSchema: {
         verbose: z.boolean().optional().describe('Include detailed memory values'),
+        verbosity: z.number().min(1).max(4).optional().describe('Filter by verbosity level 1-4 (1=minimal, 2=standard, 3=detailed, 4=comprehensive)'),
+        minImportance: z.number().min(1).max(5).optional().describe('Only include memories at or above this importance (1=trivial, 5=critical)'),
+        daysAgo: z.number().optional().describe('Only return memories updated in last N days'),
+        since: z.string().optional().describe('ISO date string - only return memories updated after this date'),
+        until: z.string().optional().describe('ISO date string - only return memories updated before this date'),
       },
     },
     handler,

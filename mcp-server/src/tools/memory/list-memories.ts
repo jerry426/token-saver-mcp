@@ -1,7 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { z } from 'zod'
+import type { Memory } from '../../db/memory-db'
 import type { ToolMetadata } from '../types'
-import { memoryDb, MemoryScope, type Memory } from '../../db/memory-db'
+import { z } from 'zod'
+import { memoryDb, MemoryScope } from '../../db/memory-db'
 
 /**
  * Tool metadata for documentation generation
@@ -19,6 +20,11 @@ export const metadata: ToolMetadata = {
       scope: 'Filter by scope: global, project, session, or shared (optional)',
       limit: 'Maximum number of memories to return (optional)',
       tags: 'Filter by tags (optional)',
+      minImportance: 'Only show memories at or above this importance 1-5 (optional)',
+      maxVerbosity: 'Only show memories at or below this verbosity 1-4 (optional)',
+      daysAgo: 'Only return memories updated in last N days (optional)',
+      since: 'ISO date string - only return memories updated after this date (optional)',
+      until: 'ISO date string - only return memories updated before this date (optional)',
     },
 
     examples: [
@@ -29,15 +35,31 @@ export const metadata: ToolMetadata = {
 })`,
       },
       {
-        title: 'List recent memories',
+        title: 'List only critical memories',
         code: `list_memories({
+  minImportance: 4,  // High and Critical only
   limit: 10
 })`,
       },
       {
-        title: 'List tagged memories',
+        title: 'List concise memories only',
         code: `list_memories({
-  tags: ["important", "bug"]
+  maxVerbosity: 2,   // Minimal and Standard only
+  scope: "project"
+})`,
+      },
+      {
+        title: 'List recent memories from last week',
+        code: `list_memories({
+  daysAgo: 7,
+  scope: "project"
+})`,
+      },
+      {
+        title: 'List memories in date range',
+        code: `list_memories({
+  since: "2025-01-15T00:00:00Z",
+  until: "2025-01-20T23:59:59Z"
 })`,
       },
     ],
@@ -66,11 +88,16 @@ export async function handler(params: {
   scope?: 'global' | 'project' | 'session' | 'shared'
   limit?: number
   tags?: string[]
+  minImportance?: number // 1-5: Only show memories at or above this importance
+  maxVerbosity?: number // 1-4: Only show memories at or below this verbosity
+  daysAgo?: number // Only return memories updated in last N days
+  since?: string // ISO date string - only return memories updated after this date
+  until?: string // ISO date string - only return memories updated before this date
 } = {}): Promise<any> {
   try {
     // Get current working directory as project path
     const projectPath = process.cwd()
-    
+
     const scope = params.scope ? MemoryScope[params.scope.toUpperCase() as keyof typeof MemoryScope] : undefined
 
     if (params.scope && !scope) {
@@ -82,13 +109,16 @@ export async function handler(params: {
       }
     }
 
-    // List memories
-    const memories = memoryDb.list({
+    // List memories with filtering
+    const memories = memoryDb.readFiltered({
       scope,
       project_path: (!scope || scope === MemoryScope.PROJECT) ? projectPath : undefined,
-      tags: params.tags,
-      limit: params.limit || 50,
-    })
+      minImportance: params.minImportance,
+      minVerbosity: params.maxVerbosity, // Note: maxVerbosity maps to minVerbosity in readFiltered
+      daysAgo: params.daysAgo,
+      since: params.since,
+      until: params.until,
+    }).slice(0, params.limit || 50) // Apply limit after filtering
 
     if (memories.length === 0) {
       return {
@@ -106,11 +136,13 @@ export async function handler(params: {
         value = JSON.parse(memory.value)
         // Truncate long values for listing
         if (typeof value === 'object') {
-          value = JSON.stringify(value).substring(0, 100) + '...'
-        } else if (typeof value === 'string' && value.length > 100) {
-          value = value.substring(0, 100) + '...'
+          value = `${JSON.stringify(value).substring(0, 100)}...`
         }
-      } catch {}
+        else if (typeof value === 'string' && value.length > 100) {
+          value = `${value.substring(0, 100)}...`
+        }
+      }
+      catch {}
 
       return {
         key: memory.key,
@@ -152,6 +184,11 @@ export function register(server: McpServer) {
         scope: z.enum(['global', 'project', 'session', 'shared']).optional().describe('Filter by memory scope'),
         limit: z.number().optional().describe('Maximum number of memories to return'),
         tags: z.array(z.string()).optional().describe('Filter by tags'),
+        minImportance: z.number().min(1).max(5).optional().describe('Only show memories at or above this importance'),
+        maxVerbosity: z.number().min(1).max(4).optional().describe('Only show memories at or below this verbosity'),
+        daysAgo: z.number().optional().describe('Only return memories updated in last N days'),
+        since: z.string().optional().describe('ISO date string - only return memories updated after this date'),
+        until: z.string().optional().describe('ISO date string - only return memories updated before this date'),
       },
     },
     handler,
