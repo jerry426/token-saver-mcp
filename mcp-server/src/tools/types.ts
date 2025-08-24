@@ -11,7 +11,7 @@ export interface ToolMetadata {
   title: string
 
   /** Tool category for organization */
-  category: 'lsp' | 'cdp' | 'helper' | 'system'
+  category: 'lsp' | 'cdp' | 'helper' | 'system' | 'memory'
 
   /** Full description of what the tool does */
   description: string
@@ -66,6 +66,10 @@ export interface ToolMetadata {
       requiresChrome?: boolean
       /** Whether this is a meta tool about the system itself */
       isMetaTool?: boolean
+      /** Whether this is a core tool */
+      isCore?: boolean
+      /** Whether this replaces /resume command */
+      replacesResume?: boolean
     }
 
     // Helper tool specific fields

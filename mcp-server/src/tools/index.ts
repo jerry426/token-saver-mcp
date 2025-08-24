@@ -42,6 +42,13 @@ import * as getInstructions from './system/get-instructions'
 import * as getSupportedLanguages from './system/get-supported-languages'
 // Import all System tools
 import * as retrieveBuffer from './system/retrieve-buffer'
+
+// Import all Memory tools
+import * as writeMemory from './memory/write-memory'
+import * as readMemory from './memory/read-memory'
+import * as listMemories from './memory/list-memories'
+import * as deleteMemory from './memory/delete-memory'
+import * as smartResume from './memory/smart-resume'
 // For STDIO server, all logging must go to stderr to avoid corrupting the JSON-RPC protocol
 const logger = { info: console.error, error: console.error, warn: console.error }
 
@@ -99,6 +106,13 @@ const toolModules: ToolModule[] = [
   testFormValidation,
   checkPagePerformance,
   debugJavascriptError,
+
+  // Memory tools (5)
+  writeMemory,
+  readMemory,
+  listMemories,
+  deleteMemory,
+  smartResume,
 ]
 
 // Populate tool handlers map for HTTP endpoint access
