@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { z } from 'zod'
 import type { ToolMetadata } from '../types'
 import { memoryDb, MemoryScope, type Memory } from '../../db/memory-db'
 
@@ -215,13 +216,7 @@ export function register(server: McpServer) {
       title: metadata.title,
       description: metadata.description,
       inputSchema: {
-        type: 'object',
-        properties: {
-          verbose: {
-            type: 'boolean',
-            description: 'Include detailed memory values',
-          },
-        },
+        verbose: z.boolean().optional().describe('Include detailed memory values'),
       },
     },
     handler,

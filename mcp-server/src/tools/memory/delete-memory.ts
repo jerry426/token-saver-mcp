@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { z } from 'zod'
 import type { ToolMetadata } from '../types'
 import { memoryDb, MemoryScope } from '../../db/memory-db'
 
@@ -56,21 +57,13 @@ export const metadata: ToolMetadata = {
 // Tool handler
 export async function handler(params: {
   key: string
-  scope?: string
+  scope?: 'global' | 'project' | 'session' | 'shared'
 }): Promise<any> {
   try {
     // Get current working directory as project path
     const projectPath = process.cwd()
     
-    // Map scope string to enum
-    const scopeMap: Record<string, MemoryScope> = {
-      global: MemoryScope.GLOBAL,
-      project: MemoryScope.PROJECT,
-      session: MemoryScope.SESSION,
-      shared: MemoryScope.SHARED,
-    }
-
-    const scope = params.scope ? scopeMap[params.scope] : undefined
+    const scope = params.scope ? MemoryScope[params.scope.toUpperCase() as keyof typeof MemoryScope] : undefined
 
     if (params.scope && !scope) {
       return {
@@ -114,19 +107,8 @@ export function register(server: McpServer) {
       title: metadata.title,
       description: metadata.description,
       inputSchema: {
-        type: 'object',
-        properties: {
-          key: {
-            type: 'string',
-            description: 'Key of the memory to delete',
-          },
-          scope: {
-            type: 'string',
-            enum: ['global', 'project', 'session', 'shared'],
-            description: 'Memory scope',
-          },
-        },
-        required: ['key'],
+        key: z.string().describe('Key of the memory to delete'),
+        scope: z.enum(['global', 'project', 'session', 'shared']).optional().describe('Memory scope'),
       },
     },
     handler,

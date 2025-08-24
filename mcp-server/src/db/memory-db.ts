@@ -1,6 +1,6 @@
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 import Database from 'better-sqlite3'
-import * as path from 'path'
-import * as fs from 'fs'
 
 // Types
 export interface Memory {
@@ -23,7 +23,7 @@ export enum MemoryScope {
   GLOBAL = 'global',
   PROJECT = 'project',
   SESSION = 'session',
-  SHARED = 'shared'
+  SHARED = 'shared',
 }
 
 class MemoryDatabase {
@@ -34,7 +34,7 @@ class MemoryDatabase {
     // Store database in user's home directory
     const homeDir = process.env.HOME || process.env.USERPROFILE || '.'
     const tokenSaverDir = path.join(homeDir, '.token-saver-mcp')
-    
+
     // Create directory if it doesn't exist
     if (!fs.existsSync(tokenSaverDir)) {
       fs.mkdirSync(tokenSaverDir, { recursive: true })
@@ -42,10 +42,10 @@ class MemoryDatabase {
 
     this.dbPath = path.join(tokenSaverDir, 'memory.db')
     this.db = new Database(this.dbPath)
-    
+
     // Enable WAL mode for better concurrency
     this.db.pragma('journal_mode = WAL')
-    
+
     this.initDatabase()
   }
 
@@ -89,7 +89,7 @@ class MemoryDatabase {
       END;
     `)
 
-    console.log(`[MemoryDB] Initialized database at ${this.dbPath}`)
+    console.error(`[MemoryDB] Initialized database at ${this.dbPath}`)
   }
 
   // Write a memory
@@ -124,8 +124,9 @@ class MemoryDatabase {
         WHERE id = ?
       `).run(valueJson, params.ttl, tagsJson, existing.id)
 
-      return this.read({ key: params.key, scope, project_path: params.project_path })!
-    } else {
+      return this.read({ key: params.key, scope, project_path: params.project_path }) as Memory
+    }
+    else {
       // Insert new memory
       this.db.prepare(`
         INSERT INTO memories (id, key, value, scope, project_path, session_id, created_by, ttl, tags)
@@ -139,7 +140,7 @@ class MemoryDatabase {
         params.session_id,
         params.created_by,
         params.ttl,
-        tagsJson
+        tagsJson,
       )
 
       return this.db.prepare('SELECT * FROM memories WHERE id = ?').get(id) as Memory
@@ -166,7 +167,7 @@ class MemoryDatabase {
     if (params.pattern || params.key?.includes('*')) {
       // Pattern matching - convert * to SQL LIKE pattern
       const pattern = (params.pattern || params.key || '').replace(/\*/g, '%')
-      
+
       let query = 'SELECT * FROM memories WHERE key LIKE ?'
       const queryParams: any[] = [pattern]
 
@@ -181,12 +182,13 @@ class MemoryDatabase {
       }
 
       const results = this.db.prepare(query).all(...queryParams) as Memory[]
-      
+
       // Update access for all results
       results.forEach(r => updateAccess(r.id))
-      
+
       return results
-    } else if (params.key) {
+    }
+    else if (params.key) {
       // Exact key match
       let query = 'SELECT * FROM memories WHERE key = ?'
       const queryParams: any[] = [params.key]
@@ -202,11 +204,11 @@ class MemoryDatabase {
       }
 
       const result = this.db.prepare(query).get(...queryParams) as Memory | undefined
-      
+
       if (result) {
         updateAccess(result.id)
       }
-      
+
       return result || null
     }
 
@@ -290,15 +292,15 @@ class MemoryDatabase {
     database_size: number
   } {
     const total = this.db.prepare('SELECT COUNT(*) as count FROM memories').get() as { count: number }
-    
+
     const byScope = this.db.prepare(`
       SELECT scope, COUNT(*) as count 
       FROM memories 
       GROUP BY scope
-    `).all() as Array<{ scope: string; count: number }>
+    `).all() as Array<{ scope: string, count: number }>
 
     const scopeMap: Record<string, number> = {}
-    byScope.forEach(s => {
+    byScope.forEach((s) => {
       scopeMap[s.scope] = s.count
     })
 
@@ -308,7 +310,7 @@ class MemoryDatabase {
     return {
       total_memories: total.count,
       by_scope: scopeMap,
-      database_size: stats.size
+      database_size: stats.size,
     }
   }
 

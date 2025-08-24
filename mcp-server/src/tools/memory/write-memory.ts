@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { z } from 'zod'
 import type { ToolMetadata } from '../types'
 import { memoryDb, MemoryScope } from '../../db/memory-db'
 
@@ -77,7 +78,7 @@ export const metadata: ToolMetadata = {
 export async function handler(params: {
   key: string
   value: any
-  scope?: string
+  scope?: 'global' | 'project' | 'session' | 'shared'
   ttl?: number
   tags?: string[]
 }): Promise<any> {
@@ -85,15 +86,7 @@ export async function handler(params: {
     // Get current working directory as project path
     const projectPath = process.cwd()
     
-    // Map scope string to enum
-    const scopeMap: Record<string, MemoryScope> = {
-      global: MemoryScope.GLOBAL,
-      project: MemoryScope.PROJECT,
-      session: MemoryScope.SESSION,
-      shared: MemoryScope.SHARED,
-    }
-
-    const scope = params.scope ? scopeMap[params.scope] : MemoryScope.PROJECT
+    const scope = params.scope ? MemoryScope[params.scope.toUpperCase() as keyof typeof MemoryScope] : MemoryScope.PROJECT
 
     if (params.scope && !scope) {
       return {
@@ -146,33 +139,13 @@ export function register(server: McpServer) {
       title: metadata.title,
       description: metadata.description,
       inputSchema: {
-        type: 'object',
-        properties: {
-          key: {
-            type: 'string',
-            description: 'Hierarchical key for the memory',
-          },
-          value: {
-            description: 'Value to store (any JSON-serializable type)',
-          },
-          scope: {
-            type: 'string',
-            enum: ['global', 'project', 'session', 'shared'],
-            description: 'Memory scope (default: project)',
-          },
-          ttl: {
-            type: 'number',
-            description: 'Time-to-live in seconds',
-          },
-          tags: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Tags for categorization',
-          },
-        },
-        required: ['key', 'value'],
+        key: z.string().describe('Hierarchical key for the memory'),
+        value: z.any().describe('Value to store (any JSON-serializable type)'),
+        scope: z.enum(['global', 'project', 'session', 'shared']).optional().describe('Memory scope (default: project)'),
+        ttl: z.number().optional().describe('Time-to-live in seconds'),
+        tags: z.array(z.string()).optional().describe('Tags for categorization'),
       },
     },
-    handler,
+    handler as any, // Type mismatch between zod schema and handler params
   )
 }
