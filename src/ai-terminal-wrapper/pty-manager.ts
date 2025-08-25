@@ -96,6 +96,16 @@ export class PTYManager extends EventEmitter {
   async write(text: string): Promise<void> {
     if (!this.proc) throw new Error('PTY not initialized')
     if (this.state === 'terminated') throw new Error('PTY terminated')
+    
+    // Debug: Log what we're actually sending
+    console.log('PTY write:', [...text].map(c => {
+      const code = c.charCodeAt(0);
+      if (code === 13) return '<CR>';
+      if (code === 10) return '<LF>';
+      if (code < 32) return `<${code}>`;
+      return c;
+    }).join(''));
+    
     this.proc.write(text)
     this.metrics.bytesWritten += Buffer.byteLength(text)
     this.metrics.lastActivity = Date.now()

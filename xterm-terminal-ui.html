@@ -365,6 +365,7 @@
                 <button class="btn-spawn" onclick="showSpawnModal()">+ Spawn</button>
             </div>
             <div class="agent-list" id="agent-list"></div>
+            <button class="btn-refresh" onclick="refreshAgentList()" style="width: calc(100% - 20px); margin: 10px; background: #3c3c3c; border: 1px solid #5a5a5a;">🔄 Sync with Server</button>
         </div>
         
         <div class="terminal-container">
@@ -423,6 +424,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             connectWebSocket();
             updateSpawnCommand();
+            // Clean up orphaned sessions on load
+            setTimeout(() => refreshAgentList(), 1000);
         });
         
         // Update command based on type selection
@@ -745,11 +748,26 @@
         async function terminateAgent(agentId) {
             if (confirm('Terminate this agent?')) {
                 try {
-                    await fetch(`http://127.0.0.1:${API_PORT}/api/agents/${agentId}`, {
+                    const response = await fetch(`http://127.0.0.1:${API_PORT}/api/agents/${agentId}`, {
                         method: 'DELETE'
                     });
+                    
+                    if (!response.ok) {
+                        // Agent might not exist on server, remove from UI anyway
+                        console.warn(`Agent ${agentId} not found on server, removing from UI`);
+                        agents.delete(agentId);
+                        removeTerminalTab(agentId);
+                        updateAgentList();
+                        showNotification('Agent removed from UI (was already terminated)', 'info');
+                    }
                 } catch (error) {
-                    showNotification('Error terminating agent', 'error');
+                    console.error('Error terminating agent:', error);
+                    // Remove from UI even if server request fails
+                    if (confirm('Failed to terminate on server. Remove from UI anyway?')) {
+                        agents.delete(agentId);
+                        removeTerminalTab(agentId);
+                        updateAgentList();
+                    }
                 }
             }
         }
@@ -757,6 +775,46 @@
         function showSpawnModal() {
             document.getElementById('spawn-modal').classList.add('show');
             document.getElementById('spawn-name').value = `agent-${Date.now()}`;
+        }
+        
+        async function refreshAgentList() {
+            try {
+                // Get current state from server
+                const response = await fetch(`http://127.0.0.1:${API_PORT}/api/agents`);
+                const serverAgents = await response.json();
+                
+                // Create a map of server agents
+                const serverAgentIds = new Set(serverAgents.map(a => a.id));
+                
+                // Remove agents that don't exist on server
+                const toRemove = [];
+                agents.forEach((agent, id) => {
+                    if (!serverAgentIds.has(id)) {
+                        toRemove.push(id);
+                    }
+                });
+                
+                toRemove.forEach(id => {
+                    console.log(`Removing orphaned agent from UI: ${id}`);
+                    agents.delete(id);
+                    removeTerminalTab(id);
+                });
+                
+                // Add agents that exist on server but not in UI
+                serverAgents.forEach(agent => {
+                    if (!agents.has(agent.id)) {
+                        console.log(`Adding missing agent to UI: ${agent.id}`);
+                        agents.set(agent.id, agent);
+                        createTerminalTab(agent);
+                    }
+                });
+                
+                updateAgentList();
+                showNotification(`Synced with server: ${serverAgents.length} agents`, 'success');
+            } catch (error) {
+                console.error('Error refreshing agent list:', error);
+                showNotification('Error syncing with server', 'error');
+            }
         }
         
         function hideSpawnModal() {

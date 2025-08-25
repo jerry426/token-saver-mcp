@@ -8,6 +8,9 @@ export interface InjectionOptions {
   timeout?: number
   confirmWithEnter?: boolean
   raw?: boolean  // Send raw input without processing
+  charByChar?: boolean  // Send character by character for AI CLIs
+  charDelay?: number  // Delay between characters in ms
+  manualSubmit?: boolean  // Bulk text without auto-Enter (for speech-to-text, manual review, etc.)
 }
 
 export interface InjectionResult {
@@ -50,6 +53,9 @@ export class InputInjector extends EventEmitter {
         timeout: options.timeout ?? 30_000,
         confirmWithEnter: options.confirmWithEnter ?? true,
         raw: options.raw ?? false,
+        charByChar: options.charByChar ?? false,
+        charDelay: options.charDelay ?? 50,
+        manualSubmit: options.manualSubmit ?? false,
       },
       retries: 0,
     }
@@ -89,7 +95,20 @@ export class InputInjector extends EventEmitter {
           continue
         }
         try {
-          if (item.options.raw) {
+          if (item.options.manualSubmit) {
+            // Manual submit mode: Send bulk text without auto-Enter
+            // Used for speech-to-text, manual review workflows, etc.
+            await pty.write(item.text)
+            // Note: User will manually press Enter to submit
+          } else if (item.options.charByChar) {
+            // Send character by character for AI CLIs
+            for (const char of item.text) {
+              await pty.write(char)
+              if (item.options.charDelay > 0) {
+                await new Promise(r => setTimeout(r, item.options.charDelay))
+              }
+            }
+          } else if (item.options.raw) {
             // Send raw input without any processing
             await pty.write(item.text)
           } else if (item.options.humanLike) {
@@ -98,8 +117,14 @@ export class InputInjector extends EventEmitter {
             await pty.write(item.text)
           }
           
-          if (item.options.confirmWithEnter && !item.options.raw && !item.text.endsWith('\n')) {
-            await pty.write('\n')
+          if (item.options.confirmWithEnter && !item.options.raw && !item.options.manualSubmit && !item.text.endsWith('\n') && !item.text.endsWith('\r')) {
+            // Use carriage return for AI CLIs (they expect \r not \n)
+            // Send it character by character if in charByChar mode
+            if (item.options.charByChar) {
+              await pty.write(String.fromCharCode(13))  // Send CR as a single character
+            } else {
+              await pty.write('\r')
+            }
           }
           this.emit('injected', { id: item.id })
         } catch (e) {

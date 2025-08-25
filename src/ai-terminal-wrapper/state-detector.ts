@@ -41,13 +41,16 @@ export class StateDetector extends EventEmitter {
 
   private addDefaults() {
     this.addPattern({ name: 'ready', confidence: 0.9, priority: 100, patterns: [
-      /^[>❯$#%]\s*$/m,  // Added % for zsh
+      /[$#%]\s*$/m,  // Shell prompts ending with $, #, or %
+      /^[>❯$#%]\s*$/m,  // Simple prompts
+      /^sh-\d+\.\d+[$#%]\s*$/m,  // sh-3.2$ format
+      /^bash-\d+\.\d+[$#%]\s*$/m,  // bash-5.1$ format
       /^(gemini|claude|gpt|llama|chatgpt|openai)>\s*$/im,
       /^assistant>\s*$/im,
       /\n>>> $/,
       /\nAI\s*:\s*$/,
       /Enter your (prompt|question|command):/i,
-      /^\w+@[\w-].*[$#%]\s*$/m,  // Added % for zsh
+      /^\w+@[\w-].*[$#%]\s*$/m,  // user@host format
       /^➜.*$/m,  // Common zsh prompt with arrow
       /^[\w-]+\s+%\s*$/m,  // Simple zsh prompt like "jerry %"
       /^\[.*\]\s*[$#%]\s*$/m,  // Bracketed prompts
@@ -111,7 +114,9 @@ export class StateDetector extends EventEmitter {
 
   private commit(det: DetectionResult) {
     if (det.state === this.current) return
+    const prev = this.current
     this.current = det.state
+    console.log(`State changed: ${prev} -> ${det.state} (confidence: ${det.confidence})`)
     this.emit('state-changed', { current: det.state, confidence: det.confidence, timestamp: det.timestamp })
   }
 

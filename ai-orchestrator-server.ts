@@ -132,13 +132,13 @@ async function startServer() {
     
     app.post('/api/agents/:id/inject', async (req, res) => {
       try {
-        const { prompt, waitForResponse, raw } = req.body;
+        const { prompt, waitForResponse, raw, charByChar, charDelay, manualSubmit } = req.body;
         
-        logger.debug(`Injecting to agent ${req.params.id}: ${prompt}${raw ? ' (raw)' : ''}`);
+        logger.debug(`Injecting to agent ${req.params.id}: ${prompt}${raw ? ' (raw)' : ''}${charByChar ? ' (char-by-char)' : ''}${manualSubmit ? ' (manual-submit)' : ''}`);
         const result = await orchestrator.injectToAgent(
           req.params.id, 
           prompt, 
-          { waitForResponse, raw }
+          { waitForResponse, raw, charByChar, charDelay, manualSubmit }
         );
         
         res.json(result);

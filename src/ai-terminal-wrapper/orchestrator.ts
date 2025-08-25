@@ -103,6 +103,17 @@ export class Orchestrator extends EventEmitter {
     
     // Connect StateDetector state changes to orchestrator events
     detector.on('state-changed', (result) => {
+      // Update the agent's status based on detected state
+      const agent = this.agents.get(cfg.id)
+      if (agent) {
+        if (result.current === 'ready' || result.current === 'complete') {
+          agent.status = 'idle'
+        } else if (result.current === 'processing') {
+          agent.status = 'busy'
+        } else if (result.current === 'error') {
+          agent.status = 'error'
+        }
+      }
       this.emit('state-change', { agentId: cfg.id, newState: result.current, confidence: result.confidence })
     })
     
@@ -200,7 +211,7 @@ export class Orchestrator extends EventEmitter {
     }
   }
 
-  async injectToAgent(id: string, prompt: string, opts: { waitForResponse?: boolean; raw?: boolean } = {}) {
+  async injectToAgent(id: string, prompt: string, opts: { waitForResponse?: boolean; raw?: boolean; charByChar?: boolean; charDelay?: number; manualSubmit?: boolean } = {}) {
     const a = this.agents.get(id)
     if (!a) throw new Error(`Agent not found: ${id}`)
     a.status = 'busy'
@@ -208,8 +219,11 @@ export class Orchestrator extends EventEmitter {
     const start = Date.now()
     try {
       await this.injector.inject(a.config.name, prompt, { 
-        confirmWithEnter: !opts.raw,
-        raw: opts.raw 
+        confirmWithEnter: !opts.raw && !opts.manualSubmit,
+        raw: opts.raw,
+        charByChar: opts.charByChar,
+        charDelay: opts.charDelay,
+        manualSubmit: opts.manualSubmit
       })
       a.metrics.tasksCompleted++
       const dt = Date.now() - start
