@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Terminal Size Debug</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css" />
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            background: #1e1e1e; 
+            color: #d4d4d4;
+            font-family: monospace;
+        }
+        #terminal { 
+            width: 100%; 
+            height: 500px; 
+            background: black;
+        }
+        #info {
+            margin-top: 20px;
+            padding: 10px;
+            background: #2d2d30;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Terminal Size Debugger</h2>
+    <div id="terminal"></div>
+    <div id="info">
+        <p>Terminal Cols: <span id="cols">-</span></p>
+        <p>Terminal Rows: <span id="rows">-</span></p>
+        <p>Container Width: <span id="width">-</span>px</p>
+        <p>Container Height: <span id="height">-</span>px</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+    <script>
+        const terminal = new Terminal({
+            fontSize: 14,
+            fontFamily: 'Consolas, Monaco, monospace'
+        });
+        
+        const fitAddon = new FitAddon.FitAddon();
+        terminal.loadAddon(fitAddon);
+        
+        const container = document.getElementById('terminal');
+        terminal.open(container);
+        fitAddon.fit();
+        
+        function updateInfo() {
+            document.getElementById('cols').textContent = terminal.cols;
+            document.getElementById('rows').textContent = terminal.rows;
+            document.getElementById('width').textContent = container.clientWidth;
+            document.getElementById('height').textContent = container.clientHeight;
+            
+            terminal.write('\x1b[2J\x1b[H'); // Clear screen
+            terminal.write(`Terminal Size: ${terminal.cols}x${terminal.rows}\r\n`);
+            terminal.write(`Container: ${container.clientWidth}x${container.clientHeight}px\r\n`);
+            terminal.write('\r\n');
+            terminal.write('Default PTY size is usually 80x24 or 120x40\r\n');
+            terminal.write('Your terminal is currently:\r\n');
+            terminal.write(`  Cols: ${terminal.cols} (${terminal.cols > 80 ? 'wider' : 'narrower'} than default)\r\n`);
+            terminal.write(`  Rows: ${terminal.rows} (${terminal.rows > 24 ? 'taller' : 'shorter'} than default)\r\n`);
+        }
+        
+        // Initial update
+        updateInfo();
+        
+        // Update on resize
+        terminal.onResize(() => updateInfo());
+        window.addEventListener('resize', () => {
+            fitAddon.fit();
+            updateInfo();
+        });
+    </script>
+</body>
+</html>

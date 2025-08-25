@@ -592,7 +592,11 @@ async function launchEnhancedServer() {
         </div>
 
         <script>
-          const WS_URL = 'ws://localhost:${WS_PORT}';
+          const WS_URL = (() => {
+            const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
+            const host = window.location.hostname
+            return scheme + '://' + host + ':${WS_PORT}'
+          })();
           let ws = null;
           let currentAgent = null;
           const agents = new Set();

@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Terminal Orchestrator - Enhanced UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden; /* Prevent body scrolling */
+        }
+        
+        .header {
+            background: #2d2d30;
+            padding: 10px 20px;
+            border-bottom: 2px solid #4EC9B0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            color: #4EC9B0;
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #666;
+        }
+        
+        .status-dot.connected {
+            background: #4EC9B0;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0; /* Critical for nested flex containers */
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #252526;
+            border-right: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 15px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        .btn-spawn {
+            width: 100%;
+            padding: 8px;
+            background: #4EC9B0;
+            color: #1e1e1e;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .btn-spawn:hover {
+            background: #3BA99C;
+        }
+        
+        .agent-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .agent-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #3e3e42;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .agent-item:hover {
+            background: #2d2d30;
+        }
+        
+        .agent-item.active {
+            background: #094771;
+            border-left: 3px solid #4EC9B0;
+        }
+        
+        .agent-info {
+            flex: 1;
+        }
+        
+        .agent-name {
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .agent-type {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .agent-state {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: #3e3e42;
+        }
+        
+        .agent-state.ready {
+            background: #4EC9B0;
+            color: #1e1e1e;
+        }
+        
+        .agent-state.processing {
+            background: #f39c12;
+            color: #1e1e1e;
+        }
+        
+        .agent-state.error {
+            background: #e74c3c;
+            color: #fff;
+        }
+        
+        .terminal-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            min-height: 0; /* Important for flex children */
+        }
+        
+        .tabs {
+            display: flex;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            overflow-x: auto;
+            flex-shrink: 0; /* Don't shrink tabs */
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            border-right: 1px solid #3e3e42;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        
+        .tab:hover {
+            background: #3e3e42;
+        }
+        
+        .tab.active {
+            background: #1e1e1e;
+            border-bottom: 2px solid #4EC9B0;
+        }
+        
+        .tab-close {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .tab-close:hover {
+            background: #e74c3c;
+        }
+        
+        .terminal-view {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            min-height: 0; /* Important for proper scrolling */
+            position: relative;
+        }
+        
+        .terminal-view.active {
+            display: flex;
+        }
+        
+        .terminal-output {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 0; /* Allows proper scrolling */
+        }
+        
+        .terminal-input-container {
+            display: flex;
+            background: #2d2d30;
+            border-top: 1px solid #3e3e42;
+            padding: 10px;
+            gap: 10px;
+            flex-shrink: 0; /* Don't shrink input area */
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+        
+        .terminal-input {
+            flex: 1;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3e3e42;
+            padding: 8px 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        
+        .terminal-input:focus {
+            outline: none;
+            border-color: #4EC9B0;
+        }
+        
+        .btn-send {
+            padding: 8px 20px;
+            background: #4EC9B0;
+            color: #1e1e1e;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .btn-send:hover {
+            background: #3BA99C;
+        }
+        
+        .btn-clear {
+            padding: 8px 15px;
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-clear:hover {
+            background: #c0392b;
+        }
+        
+        .spawn-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .spawn-modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #2d2d30;
+            border: 1px solid #4EC9B0;
+            border-radius: 8px;
+            padding: 20px;
+            width: 400px;
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #4EC9B0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #d4d4d4;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2d2d30;
+            border: 1px solid #4EC9B0;
+            border-radius: 4px;
+            padding: 15px 20px;
+            display: none;
+            z-index: 1001;
+        }
+        
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI Terminal Orchestrator</h1>
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="ws-status"></div>
+                <span id="ws-status-text">Disconnected</span>
+            </div>
+            <div class="status-indicator">
+                <span>Agents: <strong id="agent-count">0</strong></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button class="btn-spawn" onclick="showSpawnModal()">+ Spawn Agent</button>
+            </div>
+            <div class="agent-list" id="agent-list"></div>
+        </div>
+        
+        <div class="terminal-container">
+            <div class="tabs" id="tabs"></div>
+            <div id="terminal-views" style="flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden;"></div>
+        </div>
+    </div>
+    
+    <div class="spawn-modal" id="spawn-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Spawn New Agent</h2>
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="spawn-name" placeholder="e.g., claude-1">
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="spawn-type">
+                    <option value="custom">Shell</option>
+                    <option value="claude">Claude CLI</option>
+                    <option value="chatgpt">ChatGPT CLI</option>
+                    <option value="gemini">Gemini CLI</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Command</label>
+                <input type="text" id="spawn-command" value="/bin/sh" placeholder="/path/to/cli">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-clear" onclick="hideSpawnModal()">Cancel</button>
+                <button class="btn-send" onclick="spawnAgent()">Spawn</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        // Dynamic port detection - will be set by server or use defaults
+        const WS_PORT = window.WS_PORT || 9802;  // Default WebSocket port
+        const API_PORT = window.API_PORT || 9801; // Default HTTP API port
+        let ws = null;
+        let agents = new Map();
+        let activeAgentId = null;
+        let terminalOutputs = new Map();
+        
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://127.0.0.1:${WS_PORT}`);
+            
+            ws.onopen = () => {
+                document.getElementById('ws-status').classList.add('connected');
+                document.getElementById('ws-status-text').textContent = 'Connected';
+                showNotification('Connected to orchestrator', 'success');
+                refreshAgents();
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                showNotification('Connection error', 'error');
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('ws-status').classList.remove('connected');
+                document.getElementById('ws-status-text').textContent = 'Disconnected';
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+        
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'agent-spawned':
+                    addAgent(data.agent);
+                    showNotification(`Agent spawned: ${data.agent.name}`, 'success');
+                    break;
+                    
+                case 'agent-output':
+                    appendOutput(data.agentId, data.data);
+                    break;
+                    
+                case 'state-change':
+                    updateAgentState(data.agentId, data.newState);
+                    break;
+                    
+                case 'agent-error':
+                    showNotification(`Error: ${data.error}`, 'error');
+                    break;
+                    
+                case 'agent-terminated':
+                    removeAgent(data.agentId);
+                    break;
+            }
+        }
+        
+        function addAgent(agent) {
+            agents.set(agent.id, agent);
+            terminalOutputs.set(agent.id, '');
+            updateAgentList();
+            createTerminalTab(agent.id, agent.name);
+            if (!activeAgentId) {
+                selectAgent(agent.id);
+            }
+        }
+        
+        function removeAgent(agentId) {
+            agents.delete(agentId);
+            terminalOutputs.delete(agentId);
+            updateAgentList();
+            removeTerminalTab(agentId);
+            if (activeAgentId === agentId) {
+                const nextAgent = agents.keys().next().value;
+                if (nextAgent) selectAgent(nextAgent);
+                else activeAgentId = null;
+            }
+        }
+        
+        function updateAgentState(agentId, state) {
+            const agent = agents.get(agentId);
+            if (agent) {
+                agent.state = state;
+                updateAgentList();
+            }
+        }
+        
+        function appendOutput(agentId, data) {
+            // Check for clear screen marker
+            if (data.includes('\x1b[CLEAR_SCREEN]')) {
+                // Clear the terminal output
+                terminalOutputs.set(agentId, '');
+                const outputEl = document.getElementById(`output-${agentId}`);
+                if (outputEl) {
+                    outputEl.textContent = '';
+                }
+                // Remove the marker from the data
+                data = data.replace(/\x1b\[CLEAR_SCREEN\]/g, '');
+            }
+            
+            const current = terminalOutputs.get(agentId) || '';
+            terminalOutputs.set(agentId, current + data);
+            
+            const outputEl = document.getElementById(`output-${agentId}`);
+            if (outputEl) {
+                outputEl.textContent = terminalOutputs.get(agentId);
+                outputEl.scrollTop = outputEl.scrollHeight;
+            }
+        }
+        
+        function updateAgentList() {
+            const listEl = document.getElementById('agent-list');
+            listEl.innerHTML = '';
+            
+            agents.forEach((agent, id) => {
+                const item = document.createElement('div');
+                item.className = `agent-item ${id === activeAgentId ? 'active' : ''}`;
+                item.onclick = () => selectAgent(id);
+                
+                item.innerHTML = `
+                    <div class="agent-info">
+                        <div class="agent-name">${agent.name}</div>
+                        <div class="agent-type">${agent.type}</div>
+                    </div>
+                    <div class="agent-state ${agent.state}">${agent.state}</div>
+                `;
+                
+                listEl.appendChild(item);
+            });
+            
+            document.getElementById('agent-count').textContent = agents.size;
+        }
+        
+        function createTerminalTab(agentId, name) {
+            const tabsEl = document.getElementById('tabs');
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.id = `tab-${agentId}`;
+            tab.onclick = () => selectAgent(agentId);
+            
+            tab.innerHTML = `
+                <span>${name}</span>
+                <div class="tab-close" onclick="event.stopPropagation(); terminateAgent('${agentId}')">×</div>
+            `;
+            
+            tabsEl.appendChild(tab);
+            
+            const viewsEl = document.getElementById('terminal-views');
+            const view = document.createElement('div');
+            view.className = 'terminal-view';
+            view.id = `view-${agentId}`;
+            
+            view.innerHTML = `
+                <div class="terminal-output" id="output-${agentId}"></div>
+                <div class="terminal-input-container">
+                    <input type="text" class="terminal-input" id="input-${agentId}" 
+                           placeholder="Type command and press Enter or Tab for completion..."
+                           onkeydown="handleInputKeydown(event, '${agentId}')">
+                    <button class="btn-send" onclick="sendCommand('${agentId}')">Send</button>
+                    <button class="btn-clear" onclick="clearTerminal('${agentId}')">Clear</button>
+                </div>
+            `;
+            
+            viewsEl.appendChild(view);
+        }
+        
+        function removeTerminalTab(agentId) {
+            const tab = document.getElementById(`tab-${agentId}`);
+            const view = document.getElementById(`view-${agentId}`);
+            if (tab) tab.remove();
+            if (view) view.remove();
+        }
+        
+        function selectAgent(agentId) {
+            activeAgentId = agentId;
+            
+            // Update agent list
+            updateAgentList();
+            
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.id === `tab-${agentId}`);
+            });
+            
+            // Update views
+            document.querySelectorAll('.terminal-view').forEach(view => {
+                view.classList.toggle('active', view.id === `view-${agentId}`);
+            });
+            
+            // Focus input
+            const input = document.getElementById(`input-${agentId}`);
+            if (input) input.focus();
+        }
+        
+        function handleInputKeydown(event, agentId) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendCommand(agentId);
+            } else if (event.key === 'Tab') {
+                event.preventDefault();
+                // Send tab character for completion
+                sendTabCompletion(agentId);
+            }
+        }
+        
+        async function sendTabCompletion(agentId) {
+            try {
+                const input = document.getElementById(`input-${agentId}`);
+                const currentText = input.value;
+                
+                // First send the current text (without enter), then tab
+                if (currentText) {
+                    // Send current text as raw input
+                    await fetch(`http://127.0.0.1:${API_PORT}/api/agents/${agentId}/inject`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            prompt: currentText,
+                            raw: true,
+                            waitForResponse: false
+                        })
+                    });
+                }
+                
+                // Then send tab character for completion
+                const response = await fetch(`http://127.0.0.1:${API_PORT}/api/agents/${agentId}/inject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        prompt: '\t',  // Tab character
+                        raw: true,     // Send as raw input without processing
+                        waitForResponse: false
+                    })
+                });
+                
+                if (response.ok) {
+                    // Clear the input since we've sent it to the terminal
+                    input.value = '';
+                    // Shell will show completions in terminal output
+                }
+            } catch (error) {
+                console.error('Error sending tab completion:', error);
+            }
+        }
+        
+        async function sendCommand(agentId) {
+            const input = document.getElementById(`input-${agentId}`);
+            const command = input.value.trim();
+            if (!command) return;
+            
+            try {
+                const response = await fetch(`http://127.0.0.1:${API_PORT}/api/agents/${agentId}/inject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: command })
+                });
+                
+                if (response.ok) {
+                    input.value = '';
+                } else {
+                    showNotification('Failed to send command', 'error');
+                }
+            } catch (error) {
+                showNotification('Error sending command', 'error');
+            }
+        }
+        
+        function clearTerminal(agentId) {
+            terminalOutputs.set(agentId, '');
+            const outputEl = document.getElementById(`output-${agentId}`);
+            if (outputEl) outputEl.textContent = '';
+        }
+        
+        async function terminateAgent(agentId) {
+            if (confirm('Terminate this agent?')) {
+                try {
+                    await fetch(`http://127.0.0.1:${API_PORT}/api/agents/${agentId}`, {
+                        method: 'DELETE'
+                    });
+                } catch (error) {
+                    showNotification('Error terminating agent', 'error');
+                }
+            }
+        }
+        
+        function showSpawnModal() {
+            document.getElementById('spawn-modal').classList.add('show');
+            document.getElementById('spawn-name').value = `agent-${Date.now()}`;
+        }
+        
+        function hideSpawnModal() {
+            document.getElementById('spawn-modal').classList.remove('show');
+        }
+        
+        async function spawnAgent() {
+            const name = document.getElementById('spawn-name').value;
+            const type = document.getElementById('spawn-type').value;
+            const command = document.getElementById('spawn-command').value;
+            
+            try {
+                const response = await fetch(`http://127.0.0.1:${API_PORT}/api/agents/spawn`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, type, command })
+                });
+                
+                if (response.ok) {
+                    hideSpawnModal();
+                } else {
+                    showNotification('Failed to spawn agent', 'error');
+                }
+            } catch (error) {
+                showNotification('Error spawning agent', 'error');
+            }
+        }
+        
+        async function refreshAgents() {
+            try {
+                const response = await fetch(`http://127.0.0.1:${API_PORT}/api/agents`);
+                const agentList = await response.json();
+                
+                agentList.forEach(agent => {
+                    if (!agents.has(agent.id)) {
+                        addAgent(agent);
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching agents:', error);
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Initialize
+        connectWebSocket();
+        
+        // Update spawn type selection
+        document.getElementById('spawn-type').addEventListener('change', (e) => {
+            const commandInput = document.getElementById('spawn-command');
+            switch(e.target.value) {
+                case 'claude':
+                    commandInput.value = 'claude';
+                    break;
+                case 'chatgpt':
+                    commandInput.value = 'chatgpt';
+                    break;
+                case 'gemini':
+                    commandInput.value = 'gemini';
+                    break;
+                default:
+                    commandInput.value = '/bin/sh';
+            }
+        });
+    </script>
+</body>
+</html>

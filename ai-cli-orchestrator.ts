@@ -145,16 +145,23 @@ class AICLIOrchestrator extends EventEmitter {
   async spawnAIAgent(name: string, type: string, command?: string, args?: string[]): Promise<AIAgent> {
     const id = `${type}-${Date.now()}`;
     
-    // Use predefined command if not provided
+    // Determine command/args with sensible defaults
     const cliConfig = AI_CLI_PATTERNS[type as keyof typeof AI_CLI_PATTERNS];
-    const actualCommand = command || cliConfig?.command || type;
+    let finalCommand = command || cliConfig?.command || type;
+    let finalArgs: string[] = Array.isArray(args) ? args : [];
+
+    // Apply bash default automatically for custom/shell types when no explicit command is provided
+    if (!command && (type === 'custom' || type === 'shell' || !cliConfig)) {
+      finalCommand = '/bin/bash';
+      finalArgs = ['-i'];
+    }
     
-    logger.info(`Spawning AI agent: ${name} (${type}) using command: ${actualCommand}`);
+    logger.info(`Spawning AI agent: ${name} (${type}) using command: ${finalCommand}${finalArgs.length ? ' ' + finalArgs.join(' ') : ''}`);
     
     const pty = new PTYManager({
-      command: actualCommand,
-      args: args || [],
-      name: id,
+      command: finalCommand,
+      args: finalArgs,
+      name: 'xterm-256color',
       env: {
         ...process.env,
         TERM: 'xterm-256color',
@@ -818,7 +825,12 @@ async function createAPI() {
         </div>
         
         <script>
-          const WS_URL = 'ws://localhost:${WS_PORT}';
+          const WS_URL = (() => {
+            const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
+            const host = window.location.hostname
+            // Use server-known WebSocket port, but dynamic host/scheme
+            return scheme + '://' + host + ':${WS_PORT}'
+          })();
           let ws = null;
           let currentAgentId = null;
           const agents = new Map();
