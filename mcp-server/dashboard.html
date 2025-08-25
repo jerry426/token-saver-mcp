@@ -212,6 +212,11 @@
             color: #3730a3;
         }
         
+        .tool-badge.memory {
+            background: #fce7f3;
+            color: #9f1239;
+        }
+        
         .chart-container {
             height: 200px;
             margin-top: 15px;
@@ -236,6 +241,23 @@
 <body>
     <div class="container">
         <h1>🚀 Token Saver MCP Dashboard</h1>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="/memory-viewer" style="
+                display: inline-block;
+                padding: 12px 24px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                transition: transform 0.2s, box-shadow 0.2s;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)';" 
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)';">
+                🧠 Open Memory Viewer
+            </a>
+        </div>
         
         <div class="dashboard">
             <!-- Top Row: Server Status | Request Metrics | Token Savings -->
@@ -318,28 +340,42 @@
                 </div>
             </div>
             
-            <!-- Middle Row: Available Tools (full-width) -->
-            <!-- Available Tools Card -->
+            <!-- Tool Categories: Each in its own full-width card -->
+            <!-- LSP Tools Card -->
             <div class="card full-width">
-                <h2>Available Tools</h2>
-                <div class="metric">
-                    <span class="metric-label">LSP Tools</span>
-                    <span class="metric-value" id="lsp-tool-count">15</span>
+                <h2>LSP Tools (<span id="lsp-tool-count">15</span>)</h2>
+                <div class="tools-grid" id="lsp-tools-list">
+                    <!-- LSP tools will be populated here -->
                 </div>
-                <div class="metric">
-                    <span class="metric-label">CDP Tools</span>
-                    <span class="metric-value" id="cdp-tool-count">8</span>
+            </div>
+            
+            <!-- CDP Tools Card (includes browser-based helper tools) -->
+            <div class="card full-width">
+                <h2>CDP Tools (<span id="cdp-tool-count">13</span>)</h2>
+                <div class="tools-grid" id="cdp-core-tools-list">
+                    <!-- Core CDP tools will be populated here -->
                 </div>
-                <div class="metric">
-                    <span class="metric-label">Helper Tools</span>
-                    <span class="metric-value" id="helper-tool-count">5</span>
+                <div style="margin: 15px 0; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <h3 style="color: #666; font-size: 1.1em; margin-bottom: 10px;">Browser Testing Helpers</h3>
+                    <div class="tools-grid" id="cdp-helper-tools-list">
+                        <!-- Helper tools will be populated here -->
+                    </div>
                 </div>
-                <div class="metric">
-                    <span class="metric-label">System Tools</span>
-                    <span class="metric-value" id="system-tool-count">4</span>
+            </div>
+            
+            <!-- System Tools Card -->
+            <div class="card full-width">
+                <h2>System Tools (<span id="system-tool-count">4</span>)</h2>
+                <div class="tools-grid" id="system-tools-list">
+                    <!-- System tools will be populated here -->
                 </div>
-                <div class="tools-grid" id="tools-list">
-                    <!-- Tools will be populated here -->
+            </div>
+            
+            <!-- Memory Tools Card -->
+            <div class="card full-width">
+                <h2>Memory Tools (<span id="memory-tool-count">9</span>)</h2>
+                <div class="tools-grid" id="memory-tools-list">
+                    <!-- Memory tools will be populated here -->
                 </div>
             </div>
             
@@ -403,26 +439,116 @@
                 const response = await fetch('/available-tools');
                 const data = await response.json();
                 
-                const toolsList = document.getElementById('tools-list');
-                toolsList.innerHTML = '';
+                // Group tools by category
+                const categories = {
+                    lsp: [],
+                    cdpCore: [],
+                    cdpHelper: [],
+                    system: [],
+                    memory: []
+                };
                 
                 data.tools.forEach(tool => {
-                    const badge = document.createElement('div');
-                    badge.className = `tool-badge ${tool.displayCategory || tool.category}`;
-                    badge.textContent = tool.callCount > 0 
-                        ? `${tool.name} (${tool.callCount})`
-                        : tool.name;
-                    toolsList.appendChild(badge);
+                    const displayCategory = tool.displayCategory || tool.category;
+                    const actualCategory = tool.category;
+                    
+                    if (displayCategory === 'cdp') {
+                        // Separate CDP tools into core and helper
+                        if (actualCategory === 'helper') {
+                            categories.cdpHelper.push(tool);
+                        } else {
+                            categories.cdpCore.push(tool);
+                        }
+                    } else if (displayCategory === 'lsp') {
+                        categories.lsp.push(tool);
+                    } else if (displayCategory === 'system') {
+                        categories.system.push(tool);
+                    } else if (displayCategory === 'memory') {
+                        categories.memory.push(tool);
+                    }
                 });
                 
-                document.getElementById('lsp-tool-count').textContent = 
-                    data.tools.filter(t => t.category === 'lsp').length;
+                // Update LSP tools
+                const lspList = document.getElementById('lsp-tools-list');
+                if (lspList) {
+                    lspList.innerHTML = '';
+                    categories.lsp.forEach(tool => {
+                        const badge = document.createElement('div');
+                        badge.className = 'tool-badge lsp';
+                        badge.textContent = tool.callCount > 0 
+                            ? `${tool.name} (${tool.callCount})`
+                            : tool.name;
+                        badge.title = tool.description || '';
+                        lspList.appendChild(badge);
+                    });
+                }
+                document.getElementById('lsp-tool-count').textContent = categories.lsp.length;
+                
+                // Update CDP core tools
+                const cdpCoreList = document.getElementById('cdp-core-tools-list');
+                if (cdpCoreList) {
+                    cdpCoreList.innerHTML = '';
+                    categories.cdpCore.forEach(tool => {
+                        const badge = document.createElement('div');
+                        badge.className = 'tool-badge cdp';
+                        badge.textContent = tool.callCount > 0 
+                            ? `${tool.name} (${tool.callCount})`
+                            : tool.name;
+                        badge.title = tool.description || '';
+                        cdpCoreList.appendChild(badge);
+                    });
+                }
+                
+                // Update CDP helper tools
+                const cdpHelperList = document.getElementById('cdp-helper-tools-list');
+                if (cdpHelperList) {
+                    cdpHelperList.innerHTML = '';
+                    categories.cdpHelper.forEach(tool => {
+                        const badge = document.createElement('div');
+                        badge.className = 'tool-badge helper';
+                        badge.textContent = tool.callCount > 0 
+                            ? `${tool.name} (${tool.callCount})`
+                            : tool.name;
+                        badge.title = tool.description || '';
+                        cdpHelperList.appendChild(badge);
+                    });
+                }
+                
+                // Update CDP count (core + helper)
                 document.getElementById('cdp-tool-count').textContent = 
-                    data.tools.filter(t => t.category === 'cdp').length;
-                document.getElementById('helper-tool-count').textContent = 
-                    data.tools.filter(t => t.category === 'helper').length;
-                document.getElementById('system-tool-count').textContent = 
-                    data.tools.filter(t => t.category === 'system').length;
+                    categories.cdpCore.length + categories.cdpHelper.length;
+                
+                // Update System tools
+                const systemList = document.getElementById('system-tools-list');
+                if (systemList) {
+                    systemList.innerHTML = '';
+                    categories.system.forEach(tool => {
+                        const badge = document.createElement('div');
+                        badge.className = 'tool-badge system';
+                        badge.textContent = tool.callCount > 0 
+                            ? `${tool.name} (${tool.callCount})`
+                            : tool.name;
+                        badge.title = tool.description || '';
+                        systemList.appendChild(badge);
+                    });
+                }
+                document.getElementById('system-tool-count').textContent = categories.system.length;
+                
+                // Update Memory tools
+                const memoryList = document.getElementById('memory-tools-list');
+                if (memoryList) {
+                    memoryList.innerHTML = '';
+                    categories.memory.forEach(tool => {
+                        const badge = document.createElement('div');
+                        badge.className = 'tool-badge memory';
+                        badge.textContent = tool.callCount > 0 
+                            ? `${tool.name} (${tool.callCount})`
+                            : tool.name;
+                        badge.title = tool.description || '';
+                        memoryList.appendChild(badge);
+                    });
+                }
+                document.getElementById('memory-tool-count').textContent = categories.memory.length;
             } catch (error) {
                 console.error('Failed to fetch tools:', error);
             }

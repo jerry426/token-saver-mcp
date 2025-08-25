@@ -1,12 +1,14 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import Database from 'better-sqlite3'
+import { jsonToMarkdown } from '../utils/json-to-markdown'
 
 // Types
 export interface Memory {
   id: string
   key: string
   value: string // JSON string
+  markdown?: string // Human-readable markdown representation
   scope: MemoryScope
   project_path?: string
   session_id?: string
@@ -75,7 +77,10 @@ class MemoryDatabase {
 
       // Check if value_text column exists (we need to migrate to remove it)
       const hasValueText = tableInfo.some((col: any) => col.name === 'value_text')
-      return hasValueText // Need migration if value_text EXISTS (to remove it)
+      // Check if markdown column is missing (need to add it)
+      const hasMarkdown = tableInfo.some((col: any) => col.name === 'markdown')
+
+      return hasValueText || !hasMarkdown // Need migration if value_text EXISTS or markdown is MISSING
     }
     catch {
       return false // No table exists yet
@@ -83,47 +88,97 @@ class MemoryDatabase {
   }
 
   private migrateToJsonSchema() {
-    console.log('[MemoryDB] Migrating to clean JSON schema...')
+    console.log('[MemoryDB] Migrating schema...')
 
-    // Create new table with clean JSON schema (no generated column)
-    this.db.exec(`
-      CREATE TABLE memories_new (
-        id TEXT PRIMARY KEY,
-        key TEXT NOT NULL,
-        value JSON NOT NULL,
-        scope TEXT NOT NULL DEFAULT 'project',
-        project_path TEXT,
-        session_id TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now')),
-        accessed_at TEXT DEFAULT (datetime('now')),
-        created_by TEXT,
-        ttl INTEGER,
-        tags TEXT,
-        access_count INTEGER DEFAULT 0,
-        importance INTEGER DEFAULT 3,
-        verbosity INTEGER DEFAULT 2
-      )
-    `)
+    // Check current schema
+    const tableInfo = this.db.prepare('PRAGMA table_info(memories)').all()
+    const hasMarkdown = tableInfo.some((col: any) => col.name === 'markdown')
+    const hasValueText = tableInfo.some((col: any) => col.name === 'value_text')
 
-    // Copy data from old table, converting value to JSON type
-    this.db.exec(`
-      INSERT INTO memories_new 
-      SELECT 
-        id, key, 
-        json(value), -- Convert TEXT to JSON type
-        scope, project_path, session_id,
-        created_at, updated_at, accessed_at,
-        created_by, ttl, tags, access_count,
-        importance, verbosity
-      FROM memories
-    `)
+    if (!hasMarkdown) {
+      // Just add markdown column if it doesn't exist
+      console.log('[MemoryDB] Adding markdown column...')
+      this.db.exec('ALTER TABLE memories ADD COLUMN markdown TEXT')
 
-    // Drop old table and rename new one
-    this.db.exec(`
-      DROP TABLE memories;
-      ALTER TABLE memories_new RENAME TO memories;
-    `)
+      // Generate markdown for existing memories
+      const memories = this.db.prepare('SELECT id, value FROM memories').all() as Array<{ id: string, value: string }>
+      const updateStmt = this.db.prepare('UPDATE memories SET markdown = ? WHERE id = ?')
+
+      for (const memory of memories) {
+        try {
+          const jsonValue = JSON.parse(memory.value)
+          const markdown = jsonToMarkdown(jsonValue)
+          updateStmt.run(markdown, memory.id)
+        }
+        catch (err) {
+          console.error(`[MemoryDB] Failed to generate markdown for memory ${memory.id}:`, err)
+        }
+      }
+
+      console.log(`[MemoryDB] Generated markdown for ${memories.length} existing memories`)
+    }
+
+    if (hasValueText) {
+      // Also need to remove value_text column (legacy migration)
+      console.log('[MemoryDB] Removing legacy value_text column...')
+
+      // Create new table without value_text but with markdown
+      this.db.exec(`
+        CREATE TABLE memories_new (
+          id TEXT PRIMARY KEY,
+          key TEXT NOT NULL,
+          value JSON NOT NULL,
+          markdown TEXT,
+          scope TEXT NOT NULL DEFAULT 'project',
+          project_path TEXT,
+          session_id TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now')),
+          accessed_at TEXT DEFAULT (datetime('now')),
+          created_by TEXT,
+          ttl INTEGER,
+          tags TEXT,
+          access_count INTEGER DEFAULT 0,
+          importance INTEGER DEFAULT 3,
+          verbosity INTEGER DEFAULT 2
+        )
+      `)
+
+      // Copy data from old table
+      this.db.exec(`
+        INSERT INTO memories_new 
+        SELECT 
+          id, key, 
+          json(value), -- Convert TEXT to JSON type
+          NULL, -- markdown will be generated
+          scope, project_path, session_id,
+          created_at, updated_at, accessed_at,
+          created_by, ttl, tags, access_count,
+          importance, verbosity
+        FROM memories
+      `)
+
+      // Generate markdown for all memories
+      const memories = this.db.prepare('SELECT id, value FROM memories_new').all() as Array<{ id: string, value: string }>
+      const updateStmt = this.db.prepare('UPDATE memories_new SET markdown = ? WHERE id = ?')
+
+      for (const memory of memories) {
+        try {
+          const jsonValue = JSON.parse(memory.value)
+          const markdown = jsonToMarkdown(jsonValue)
+          updateStmt.run(markdown, memory.id)
+        }
+        catch (err) {
+          console.error(`[MemoryDB] Failed to generate markdown for memory ${memory.id}:`, err)
+        }
+      }
+
+      // Drop old table and rename new one
+      this.db.exec(`
+        DROP TABLE memories;
+        ALTER TABLE memories_new RENAME TO memories;
+      `)
+    }
 
     console.log('[MemoryDB] Migration complete!')
   }
@@ -142,6 +197,7 @@ class MemoryDatabase {
           id TEXT PRIMARY KEY,
           key TEXT NOT NULL,
           value JSON NOT NULL,
+          markdown TEXT,
           scope TEXT NOT NULL DEFAULT 'project',
           project_path TEXT,
           session_id TEXT,
@@ -205,10 +261,10 @@ class MemoryDatabase {
       }
       catch {}
 
-      // Create FTS5 virtual table using value column directly
+      // Create FTS5 virtual table using key, value, and markdown columns
       this.db.exec(`
         CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts 
-        USING fts5(key, value, content='memories', content_rowid='rowid')
+        USING fts5(key, value, markdown, content='memories', content_rowid='rowid')
       `)
 
       // Populate FTS table with existing data
@@ -216,10 +272,10 @@ class MemoryDatabase {
       const ftsCount = this.db.prepare('SELECT COUNT(*) as count FROM memories_fts').pluck().get() as number || 0
 
       if (existingCount.count > 0 && ftsCount === 0) {
-        // Initial population using value column
+        // Initial population using key, value, and markdown columns
         this.db.exec(`
-          INSERT INTO memories_fts(rowid, key, value) 
-          SELECT rowid, key, value FROM memories
+          INSERT INTO memories_fts(rowid, key, value, markdown) 
+          SELECT rowid, key, value, markdown FROM memories
         `)
       }
 
@@ -228,8 +284,8 @@ class MemoryDatabase {
         CREATE TRIGGER IF NOT EXISTS memories_ai 
         AFTER INSERT ON memories 
         BEGIN
-          INSERT INTO memories_fts(rowid, key, value) 
-          VALUES (new.rowid, new.key, new.value);
+          INSERT INTO memories_fts(rowid, key, value, markdown) 
+          VALUES (new.rowid, new.key, new.value, new.markdown);
         END;
 
         CREATE TRIGGER IF NOT EXISTS memories_ad 
@@ -242,7 +298,7 @@ class MemoryDatabase {
         AFTER UPDATE ON memories 
         BEGIN
           UPDATE memories_fts 
-          SET key = new.key, value = new.value 
+          SET key = new.key, value = new.value, markdown = new.markdown 
           WHERE rowid = new.rowid;
         END;
       `)
@@ -274,6 +330,10 @@ class MemoryDatabase {
     const valueJson = typeof params.value === 'string' ? params.value : JSON.stringify(params.value)
     const tagsJson = params.tags ? JSON.stringify(params.tags) : null
 
+    // Generate markdown representation
+    const parsedValue = typeof params.value === 'string' ? JSON.parse(params.value) : params.value
+    const markdown = jsonToMarkdown(parsedValue, params.key)
+
     // Check if memory exists
     const existing = this.db.prepare(`
       SELECT * FROM memories 
@@ -285,12 +345,13 @@ class MemoryDatabase {
       // Update existing memory
       this.db.prepare(`
         UPDATE memories 
-        SET value = ?, updated_at = datetime('now'), accessed_at = datetime('now'),
+        SET value = ?, markdown = ?, updated_at = datetime('now'), accessed_at = datetime('now'),
             access_count = access_count + 1, ttl = ?, tags = ?, 
             importance = ?, verbosity = ?
         WHERE id = ?
       `).run(
         valueJson,
+        markdown,
         params.ttl,
         tagsJson,
         params.importance ?? ImportanceLevel.STANDARD,
@@ -303,12 +364,13 @@ class MemoryDatabase {
     else {
       // Insert new memory
       this.db.prepare(`
-        INSERT INTO memories (id, key, value, scope, project_path, session_id, created_by, ttl, tags, importance, verbosity)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO memories (id, key, value, markdown, scope, project_path, session_id, created_by, ttl, tags, importance, verbosity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
         params.key,
         valueJson,
+        markdown,
         scope,
         params.project_path,
         params.session_id,
@@ -404,71 +466,92 @@ class MemoryDatabase {
     since?: string // ISO date string - only return memories updated after this date
     until?: string // ISO date string - only return memories updated before this date
   }): Memory[] {
-    let query = 'SELECT * FROM memories WHERE 1=1'
-    const queryParams: any[] = []
+    try {
+      let query = 'SELECT * FROM memories WHERE 1=1'
+      const queryParams: any[] = []
 
-    if (params.pattern || params.key?.includes('*')) {
-      const pattern = (params.pattern || params.key || '').replace(/\*/g, '%')
-      query += ' AND key LIKE ?'
-      queryParams.push(pattern)
+      if (params.pattern || params.key?.includes('*')) {
+        const pattern = (params.pattern || params.key || '').replace(/\*/g, '%')
+        query += ' AND key LIKE ?'
+        queryParams.push(pattern)
+      }
+      else if (params.key) {
+        query += ' AND key = ?'
+        queryParams.push(params.key)
+      }
+
+      if (params.scope) {
+        query += ' AND scope = ?'
+        queryParams.push(params.scope)
+      }
+
+      if (params.project_path) {
+        query += ' AND (project_path = ? OR project_path IS NULL)'
+        queryParams.push(params.project_path)
+      }
+
+      // Apply verbosity filter
+      if (params.minVerbosity !== undefined) {
+        query += ' AND verbosity <= ?'
+        queryParams.push(params.minVerbosity)
+      }
+
+      // Apply importance filter
+      if (params.minImportance !== undefined) {
+        query += ' AND importance >= ?'
+        queryParams.push(params.minImportance)
+      }
+
+      // Apply date filters
+      if (params.daysAgo !== undefined) {
+        query += ' AND updated_at >= datetime(\'now\', ?)'
+        queryParams.push(`-${params.daysAgo} days`)
+      }
+
+      if (params.since) {
+        query += ' AND updated_at >= ?'
+        queryParams.push(params.since)
+      }
+
+      if (params.until) {
+        query += ' AND updated_at <= ?'
+        queryParams.push(params.until)
+      }
+
+      query += ' ORDER BY importance DESC, updated_at DESC'
+
+      const results = this.db.prepare(query).all(...queryParams) as Memory[]
+
+      // Update access for all results
+      results.forEach((r) => {
+        this.db.prepare(`
+          UPDATE memories 
+          SET accessed_at = datetime('now'), access_count = access_count + 1
+          WHERE id = ?
+        `).run(r.id)
+      })
+
+      return results
     }
-    else if (params.key) {
-      query += ' AND key = ?'
-      queryParams.push(params.key)
+    catch (error: any) {
+      // Handle database corruption gracefully
+      if (error.message?.includes('database disk image is malformed')) {
+        console.error('[MemoryDB] Database corruption detected in readFiltered')
+        try {
+          // Try to rebuild FTS
+          this.db.exec('DROP TABLE IF EXISTS memories_fts')
+          this.initFTS()
+          console.error('[MemoryDB] FTS rebuilt, retrying query...')
+          // Return empty array for now
+          return []
+        }
+        catch (rebuildError) {
+          console.error('[MemoryDB] Failed to rebuild FTS:', rebuildError)
+          return []
+        }
+      }
+      throw error
     }
-
-    if (params.scope) {
-      query += ' AND scope = ?'
-      queryParams.push(params.scope)
-    }
-
-    if (params.project_path) {
-      query += ' AND project_path = ?'
-      queryParams.push(params.project_path)
-    }
-
-    // Apply verbosity filter
-    if (params.minVerbosity !== undefined) {
-      query += ' AND verbosity <= ?'
-      queryParams.push(params.minVerbosity)
-    }
-
-    // Apply importance filter
-    if (params.minImportance !== undefined) {
-      query += ' AND importance >= ?'
-      queryParams.push(params.minImportance)
-    }
-
-    // Apply date filters
-    if (params.daysAgo !== undefined) {
-      query += ' AND updated_at >= datetime(\'now\', ?)'
-      queryParams.push(`-${params.daysAgo} days`)
-    }
-
-    if (params.since) {
-      query += ' AND updated_at >= ?'
-      queryParams.push(params.since)
-    }
-
-    if (params.until) {
-      query += ' AND updated_at <= ?'
-      queryParams.push(params.until)
-    }
-
-    query += ' ORDER BY importance DESC, updated_at DESC'
-
-    const results = this.db.prepare(query).all(...queryParams) as Memory[]
-
-    // Update access for all results
-    results.forEach((r) => {
-      this.db.prepare(`
-        UPDATE memories 
-        SET accessed_at = datetime('now'), access_count = access_count + 1
-        WHERE id = ?
-      `).run(r.id)
-    })
-
-    return results
   }
 
   // List memories

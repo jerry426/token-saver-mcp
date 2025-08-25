@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Saver Memory Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.css" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        select, button, input[type="date"] {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        #customDateRange {
+            display: flex;
+            align-items: center;
+        }
+        
+        #customDateRange span {
+            padding: 0 5px;
+            color: #666;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            height: calc(100vh - 180px);
+        }
+
+        .memory-list {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .pagination-btn {
+            padding: 8px 12px;
+            margin: 0 4px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: #f0f0f0;
+            border-color: #667eea;
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .memory-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .memory-item:hover {
+            background: #f8f9fa;
+        }
+
+        .memory-item.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        .memory-item .key {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .memory-item .meta {
+            font-size: 12px;
+            opacity: 0.7;
+            display: flex;
+            gap: 15px;
+        }
+
+        .memory-item.selected .meta {
+            opacity: 0.9;
+        }
+
+        .viewer {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .viewer-tabs {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            background: #fafafa;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: #f0f0f0;
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: white;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+
+        .viewer-content {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .markdown-content {
+            color: #1a1a1a;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .markdown-content h1 {
+            color: #2d3748;
+            font-size: 24px;
+            font-weight: 700;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .markdown-content h2 {
+            color: #2d3748;
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        .markdown-content h3 {
+            color: #2d3748;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .markdown-content code {
+            background: #f7fafc;
+            color: #2d3748;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .markdown-content pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid #2d3748;
+        }
+        
+        .markdown-content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            border: none;
+            font-size: inherit;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .markdown-content li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 20px;
+            color: #4a5568;
+            font-style: italic;
+            margin: 15px 0;
+            background: #f7fafc;
+            padding: 15px 20px;
+            border-radius: 4px;
+        }
+        
+        .markdown-content p {
+            margin-bottom: 15px;
+            line-height: 1.7;
+        }
+        
+        .markdown-content strong {
+            font-weight: 600;
+            color: #1a202c;
+        }
+        
+        .markdown-content em {
+            font-style: italic;
+            color: #2d3748;
+        }
+        
+        .markdown-content a {
+            color: #667eea;
+            text-decoration: underline;
+        }
+        
+        .markdown-content a:hover {
+            color: #5a67d8;
+        }
+
+        .json-content {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .no-selection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            font-size: 18px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f59e0b 0%, #dc2626 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .notification.show {
+            display: flex;
+            opacity: 1;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification-text {
+            flex: 1;
+        }
+        
+        .notification-button {
+            background: white;
+            color: #dc2626;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .notification-button:hover {
+            background: #fef3c7;
+            transform: scale(1.05);
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 8px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        .notification-close:hover {
+            opacity: 1;
+        }
+
+        .stats {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        .importance-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .importance-1 { background: #e0e0e0; color: #666; }
+        .importance-2 { background: #fff3cd; color: #856404; }
+        .importance-3 { background: #cfe2ff; color: #084298; }
+        .importance-4 { background: #d1ecf1; color: #0c5460; }
+        .importance-5 { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <!-- Notification for new memories -->
+    <div id="newMemoryNotification" class="notification">
+        <span class="notification-text">New memories available</span>
+        <button class="notification-button" onclick="refreshMemories()">Refresh</button>
+        <button class="notification-close" onclick="dismissNotification()">×</button>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h1 style="margin: 0;">🧠 Token Saver Memory Viewer</h1>
+                <a href="/dashboard" style="
+                    display: inline-block;
+                    padding: 10px 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    font-size: 14px;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                    transition: transform 0.2s, box-shadow 0.2s;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)';" 
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)';">
+                    📊 Dashboard
+                </a>
+            </div>
+            <div class="controls">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search memories...">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <select id="scopeFilter" title="Filter by scope" aria-label="Filter by scope">
+                    <option value="">All Scopes</option>
+                    <option value="global">Global</option>
+                    <option value="project">Project</option>
+                    <option value="session">Session</option>
+                    <option value="shared">Shared</option>
+                </select>
+                <select id="importanceFilter" title="Filter by importance" aria-label="Filter by importance">
+                    <option value="">All Importance</option>
+                    <option value="5">Critical (5)</option>
+                    <option value="4">High (4)</option>
+                    <option value="3">Standard (3)</option>
+                    <option value="2">Low (2)</option>
+                    <option value="1">Trivial (1)</option>
+                </select>
+                <select id="dateRangeFilter" title="Filter by date range" aria-label="Filter by date range">
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                    <option value="3months">Last 3 Months</option>
+                    <option value="custom">Custom Range...</option>
+                </select>
+                <div id="customDateRange" style="display: none; gap: 10px;">
+                    <input type="date" id="dateFrom" title="From date" aria-label="From date">
+                    <span>to</span>
+                    <input type="date" id="dateTo" title="To date" aria-label="To date">
+                </div>
+                <select id="sortBy" title="Sort by" aria-label="Sort by">
+                    <option value="updated_at">Recently Updated</option>
+                    <option value="created_at">Recently Created</option>
+                    <option value="access_count">Most Accessed</option>
+                    <option value="importance">Importance</option>
+                    <option value="key">Alphabetical</option>
+                </select>
+                <button type="button" onclick="refreshMemories()">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="memory-list">
+                <div id="memoryList" style="flex: 1; overflow-y: auto;">
+                    <div class="loading">Loading memories...</div>
+                </div>
+                <div id="paginationControls" style="padding: 15px; border-top: 1px solid #e0e0e0; background: #fafafa; display: flex; justify-content: space-between; align-items: center;">
+                    <!-- Pagination will be rendered here -->
+                </div>
+            </div>
+            <div class="viewer">
+                <div class="viewer-tabs">
+                    <div class="tab active" onclick="switchTab('markdown')">📝 Markdown</div>
+                    <div class="tab" onclick="switchTab('json')">{ } JSON</div>
+                    <div class="tab" onclick="switchTab('details')">ℹ️ Details</div>
+                </div>
+                <div class="viewer-content" id="viewerContent">
+                    <div class="no-selection">Select a memory to view</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let memories = [];
+        let selectedMemory = null;
+        let currentTab = 'markdown';
+        let currentPage = 1;
+        let totalPages = 1;
+        let isLoading = false;
+        let lastKnownCount = 0;
+        let checkInterval = null;
+
+        async function loadMemories(page = 1) {
+            if (isLoading) return;
+            isLoading = true;
+            
+            try {
+                // Build query parameters
+                const params = new URLSearchParams();
+                params.append('page', page.toString());
+                params.append('limit', '50');
+                
+                // Add filters
+                const searchTerm = document.getElementById('searchInput').value;
+                const scopeFilter = document.getElementById('scopeFilter').value;
+                const importanceFilter = document.getElementById('importanceFilter').value;
+                const dateRangeFilter = document.getElementById('dateRangeFilter').value;
+                const sortBy = document.getElementById('sortBy').value;
+                
+                if (searchTerm) params.append('search', searchTerm);
+                if (scopeFilter) params.append('scope', scopeFilter);
+                if (importanceFilter) params.append('importance', importanceFilter);
+                if (sortBy) {
+                    params.append('sortBy', sortBy);
+                    // Use ASC for alphabetical sort, DESC for everything else
+                    const sortOrder = sortBy === 'key' ? 'ASC' : 'DESC';
+                    params.append('sortOrder', sortOrder);
+                }
+                
+                // Handle date range
+                let dateFrom = '', dateTo = '';
+                const now = new Date();
+                
+                switch(dateRangeFilter) {
+                    case 'today':
+                        dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+                        break;
+                    case 'yesterday':
+                        const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+                        dateFrom = yesterday.toISOString();
+                        dateTo = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+                        break;
+                    case 'week':
+                        dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                        break;
+                    case 'month':
+                        dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                        break;
+                    case '3months':
+                        dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+                        break;
+                    case 'custom':
+                        const fromInput = document.getElementById('dateFrom').value;
+                        const toInput = document.getElementById('dateTo').value;
+                        if (fromInput) dateFrom = new Date(fromInput).toISOString();
+                        if (toInput) dateTo = new Date(toInput + 'T23:59:59').toISOString();
+                        break;
+                }
+                
+                if (dateFrom) params.append('dateFrom', dateFrom);
+                if (dateTo) params.append('dateTo', dateTo);
+                
+                // Fetch with parameters
+                const response = await fetch('/api/memories?' + params.toString());
+                const data = await response.json();
+                
+                // Check if there's an error in the response
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load memories');
+                }
+                
+                // Update memories and pagination
+                memories = data.memories || [];
+                currentPage = data.pagination?.page || 1;
+                totalPages = data.pagination?.totalPages || 1;
+                
+                // Clear selection when filters change (page 1 means filters changed)
+                // But keep selection if just navigating pages and the memory is still in the list
+                if (page === 1 || !memories.find(m => m.id === selectedMemory?.id)) {
+                    selectedMemory = null;
+                    renderViewer(); // Clear the viewer
+                }
+                
+                renderMemoryList();
+                renderPagination();
+                
+            } catch (error) {
+                console.error('Failed to load memories:', error);
+                document.getElementById('memoryList').innerHTML = 
+                    '<div class="error">Failed to load memories. Error: ' + error.message + '</div>';
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function renderMemoryList() {
+            const list = document.getElementById('memoryList');
+            
+            // Render list (already filtered and sorted by server)
+            if (memories.length === 0) {
+                list.innerHTML = '<div class="loading">No memories found</div>';
+                return;
+            }
+
+            list.innerHTML = memories.map(memory => `
+                <div class="memory-item ${selectedMemory?.id === memory.id ? 'selected' : ''}" 
+                     data-memory-id="${memory.id}"
+                     onclick="selectMemoryById(this)">
+                    <div class="key">
+                        ${memory.key}
+                        <span class="importance-badge importance-${memory.importance || 3}">
+                            ${['', 'Trivial', 'Low', 'Standard', 'High', 'Critical'][memory.importance || 3]}
+                        </span>
+                    </div>
+                    <div class="meta">
+                        <span>📦 ${memory.scope}</span>
+                        <span>👁 ${memory.access_count || 0}</span>
+                        <span>📅 ${new Date(memory.updated_at + 'Z').toLocaleString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        })}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectMemoryById(element) {
+            const id = element.getAttribute('data-memory-id');
+            // Memory IDs are strings, not numbers
+            selectMemory(id);
+        }
+        
+        function selectMemory(id) {
+            // Compare strings to strings
+            selectedMemory = memories.find(m => m.id === id);
+            console.log('Selected memory:', selectedMemory); // Debug log
+            if (!selectedMemory) {
+                console.error('Memory not found with id:', id, 'Available IDs:', memories.map(m => m.id));
+            }
+            renderMemoryList();
+            renderViewer();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            renderViewer();
+        }
+
+        function renderViewer() {
+            const viewer = document.getElementById('viewerContent');
+            
+            if (!selectedMemory) {
+                viewer.innerHTML = '<div class="no-selection">Select a memory to view</div>';
+                return;
+            }
+
+            switch(currentTab) {
+                case 'markdown':
+                    if (selectedMemory.markdown) {
+                        viewer.innerHTML = `<div class="markdown-content">${marked.parse(selectedMemory.markdown)}</div>`;
+                        // Highlight code blocks
+                        viewer.querySelectorAll('pre code').forEach((block) => {
+                            Prism.highlightElement(block);
+                        });
+                    } else {
+                        // If no markdown, try to generate simple markdown from value
+                        let content = '';
+                        if (selectedMemory.value) {
+                            content = `# ${selectedMemory.key}\n\n`;
+                            try {
+                                const json = JSON.parse(selectedMemory.value);
+                                content += '```json\n' + JSON.stringify(json, null, 2) + '\n```';
+                            } catch {
+                                // Plain text value
+                                content += selectedMemory.value;
+                            }
+                            viewer.innerHTML = `<div class="markdown-content">${marked.parse(content)}</div>`;
+                        } else {
+                            viewer.innerHTML = '<div class="no-selection">No content available</div>';
+                        }
+                    }
+                    break;
+
+                case 'json':
+                    if (selectedMemory.value) {
+                        try {
+                            const json = JSON.parse(selectedMemory.value);
+                            viewer.innerHTML = `<div class="json-content">${JSON.stringify(json, null, 2)}</div>`;
+                        } catch {
+                            // Not JSON, show as plain text
+                            viewer.innerHTML = `<div class="json-content">Value: ${selectedMemory.value}\n\nRaw data:\n${JSON.stringify(selectedMemory, null, 2)}</div>`;
+                        }
+                    } else {
+                        viewer.innerHTML = '<div class="no-selection">No value content</div>';
+                    }
+                    break;
+
+                case 'details':
+                    viewer.innerHTML = `
+                        <div class="stats">
+                            <h2>Memory Details</h2>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-label">Key</span>
+                                    <span class="stat-value">${selectedMemory.key}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">ID</span>
+                                    <span class="stat-value">${selectedMemory.id}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Scope</span>
+                                    <span class="stat-value">${selectedMemory.scope}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Importance</span>
+                                    <span class="stat-value">${selectedMemory.importance || 3}/5</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Verbosity</span>
+                                    <span class="stat-value">${selectedMemory.verbosity || 2}/4</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Access Count</span>
+                                    <span class="stat-value">${selectedMemory.access_count || 0}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Created</span>
+                                    <span class="stat-value">${new Date(selectedMemory.created_at + 'Z').toLocaleString('en-US', {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'medium'
+                                    })}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Updated</span>
+                                    <span class="stat-value">${new Date(selectedMemory.updated_at + 'Z').toLocaleString('en-US', {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'medium'
+                                    })}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Last Accessed</span>
+                                    <span class="stat-value">${new Date(selectedMemory.accessed_at + 'Z').toLocaleString('en-US', {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'medium'
+                                    })}</span>
+                                </div>
+                                ${selectedMemory.project_path ? `
+                                <div class="stat-item">
+                                    <span class="stat-label">Project Path</span>
+                                    <span class="stat-value">${selectedMemory.project_path}</span>
+                                </div>
+                                ` : ''}
+                                ${selectedMemory.tags ? `
+                                <div class="stat-item">
+                                    <span class="stat-label">Tags</span>
+                                    <span class="stat-value">${(() => {
+                                        try {
+                                            const tags = typeof selectedMemory.tags === 'string' 
+                                                ? JSON.parse(selectedMemory.tags) 
+                                                : selectedMemory.tags;
+                                            return Array.isArray(tags) ? tags.join(', ') : String(tags);
+                                        } catch (e) {
+                                            return selectedMemory.tags;
+                                        }
+                                    })()}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ${selectedMemory.markdown ? `
+                        <div class="stats">
+                            <h3>Markdown Preview</h3>
+                            <div class="markdown-content">${marked.parse(selectedMemory.markdown.substring(0, 500))}...</div>
+                        </div>
+                        ` : ''}
+                    `;
+                    break;
+            }
+        }
+
+        function renderPagination() {
+            const controls = document.getElementById('paginationControls');
+            
+            if (totalPages <= 1) {
+                controls.innerHTML = '<span style="color: #666;">Showing all memories</span>';
+                return;
+            }
+            
+            let html = '<div>';
+            
+            // Previous button
+            html += `<button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
+            
+            // Page numbers
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                html += `<button class="pagination-btn" onclick="goToPage(1)">1</button>`;
+                if (startPage > 2) html += '<span style="padding: 0 8px;">...</span>';
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += '<span style="padding: 0 8px;">...</span>';
+                html += `<button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+            
+            // Next button
+            html += `<button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+            
+            html += '</div>';
+            
+            // Page info
+            html += `<span style="color: #666;">Page ${currentPage} of ${totalPages}</span>`;
+            
+            controls.innerHTML = html;
+        }
+        
+        function goToPage(page) {
+            if (page < 1 || page > totalPages || page === currentPage) return;
+            loadMemories(page);
+        }
+        
+        function refreshMemories() {
+            loadMemories(1);
+        }
+
+        // Event listeners - use debounce for search
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => loadMemories(1), 300);
+        });
+        
+        document.getElementById('scopeFilter').addEventListener('change', () => loadMemories(1));
+        document.getElementById('importanceFilter').addEventListener('change', () => loadMemories(1));
+        document.getElementById('sortBy').addEventListener('change', () => loadMemories(1));
+        
+        // Date range filter with custom range handling
+        document.getElementById('dateRangeFilter').addEventListener('change', function(e) {
+            const customRange = document.getElementById('customDateRange');
+            if (e.target.value === 'custom') {
+                customRange.style.display = 'flex';
+            } else {
+                customRange.style.display = 'none';
+            }
+            loadMemories(1);
+        });
+        
+        // Custom date inputs
+        document.getElementById('dateFrom').addEventListener('change', () => loadMemories(1));
+        document.getElementById('dateTo').addEventListener('change', () => loadMemories(1));
+
+        // New memory notification functions
+        async function checkForNewMemories() {
+            try {
+                const response = await fetch('/api/memories/count');
+                const data = await response.json();
+                
+                if (data.success && data.count > 0) {
+                    if (lastKnownCount === 0) {
+                        // Initial count
+                        lastKnownCount = data.count;
+                    } else if (data.count > lastKnownCount) {
+                        // New memories detected
+                        const diff = data.count - lastKnownCount;
+                        showNotification(`${diff} new ${diff === 1 ? 'memory' : 'memories'} available`);
+                        lastKnownCount = data.count;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check for new memories:', error);
+            }
+        }
+        
+        function showNotification(message) {
+            const notification = document.getElementById('newMemoryNotification');
+            const textElement = notification.querySelector('.notification-text');
+            textElement.textContent = message;
+            notification.classList.add('show');
+            
+            // Auto-dismiss after 30 seconds
+            setTimeout(() => {
+                if (notification.classList.contains('show')) {
+                    dismissNotification();
+                }
+            }, 30000);
+        }
+        
+        function dismissNotification() {
+            const notification = document.getElementById('newMemoryNotification');
+            notification.classList.remove('show');
+        }
+        
+        function refreshMemories() {
+            dismissNotification();
+            
+            // Switch to "Recently Created" sort to show new memories at top
+            const sortSelect = document.getElementById('sortBy');
+            if (sortSelect) {
+                sortSelect.value = 'created_at';
+            }
+            
+            // Clear any existing filters to ensure new memories are visible
+            document.getElementById('searchInput').value = '';
+            document.getElementById('scopeFilter').value = '';
+            document.getElementById('importanceFilter').value = '';
+            document.getElementById('dateRangeFilter').value = '';
+            
+            loadMemories(1); // Go to first page on refresh
+            
+            // Update the count after refresh
+            setTimeout(() => {
+                checkForNewMemories();
+            }, 1000);
+        }
+        
+        // Load memories on page load
+        loadMemories().then(() => {
+            // Get initial total count
+            checkForNewMemories();
+        });
+        
+        // Check for new memories every 30 seconds
+        checkInterval = setInterval(() => {
+            checkForNewMemories();
+        }, 30000);
+        
+        // Clean up interval on page unload
+        window.addEventListener('beforeunload', () => {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+            }
+        });
+    </script>
+</body>
+</html>

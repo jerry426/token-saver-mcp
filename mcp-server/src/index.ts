@@ -145,6 +145,118 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }))
 
+  // Serve static files (memory viewer)
+  app.use('/static', express.static(path.join(__dirname, 'static')))
+
+  // Memory viewer page
+  app.get('/memory-viewer', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'static', 'memory-viewer.html'))
+  })
+
+  // Direct memory API for viewer with pagination and filtering
+  app.get('/api/memories', (req, res) => {
+    try {
+      const { memoryDb } = require('./db/memory-db')
+      
+      // Parse query parameters
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 50
+      const offset = (page - 1) * limit
+      
+      const search = req.query.search as string || ''
+      const scope = req.query.scope as string || ''
+      const importance = req.query.importance as string || ''
+      const dateFrom = req.query.dateFrom as string || ''
+      const dateTo = req.query.dateTo as string || ''
+      const sortBy = req.query.sortBy as string || 'updated_at'
+      const sortOrder = req.query.sortOrder as string || 'DESC'
+      
+      // Build query
+      let query = 'SELECT * FROM memories WHERE 1=1'
+      let countQuery = 'SELECT COUNT(*) as total FROM memories WHERE 1=1'
+      const params: any[] = []
+      const countParams: any[] = []
+      
+      if (search) {
+        query += ' AND (key LIKE ? OR value LIKE ? OR markdown LIKE ?)'
+        countQuery += ' AND (key LIKE ? OR value LIKE ? OR markdown LIKE ?)'
+        const searchPattern = `%${search}%`
+        params.push(searchPattern, searchPattern, searchPattern)
+        countParams.push(searchPattern, searchPattern, searchPattern)
+      }
+      
+      if (scope) {
+        query += ' AND scope = ?'
+        countQuery += ' AND scope = ?'
+        params.push(scope)
+        countParams.push(scope)
+      }
+      
+      if (importance) {
+        query += ' AND importance = ?'
+        countQuery += ' AND importance = ?'
+        params.push(importance)
+        countParams.push(importance)
+      }
+      
+      if (dateFrom) {
+        query += ' AND updated_at >= ?'
+        countQuery += ' AND updated_at >= ?'
+        params.push(dateFrom)
+        countParams.push(dateFrom)
+      }
+      
+      if (dateTo) {
+        query += ' AND updated_at <= ?'
+        countQuery += ' AND updated_at <= ?'
+        params.push(dateTo)
+        countParams.push(dateTo)
+      }
+      
+      // Add sorting
+      const validSortColumns = ['updated_at', 'created_at', 'access_count', 'importance', 'key']
+      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'updated_at'
+      const order = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC'
+      query += ` ORDER BY ${sortColumn} ${order}`
+      
+      // Add pagination
+      query += ' LIMIT ? OFFSET ?'
+      params.push(limit, offset)
+      
+      // Execute queries
+      const totalResult = memoryDb.db.prepare(countQuery).get(...countParams) as { total: number }
+      const memories = memoryDb.db.prepare(query).all(...params)
+      
+      res.json({
+        success: true,
+        memories,
+        pagination: {
+          page,
+          limit,
+          total: totalResult.total,
+          totalPages: Math.ceil(totalResult.total / limit)
+        }
+      })
+    } catch (error: any) {
+      res.json({ success: false, error: error.message })
+    }
+  })
+
+  // Memory count endpoint for notification system
+  app.get('/api/memories/count', (_req, res) => {
+    try {
+      const { memoryDb } = require('./db/memory-db')
+      const result = memoryDb.db.prepare('SELECT COUNT(*) as count FROM memories').get() as { count: number }
+      res.json({ 
+        success: true, 
+        count: result.count,
+        timestamp: new Date().toISOString()
+      })
+    } catch (error: any) {
+      res.json({ success: false, error: error.message, count: 0 })
+    }
+  })
+
   // Health check
   app.get('/health', (_req, res) => {
     res.json({
@@ -197,7 +309,7 @@ async function startServer() {
       name: tool.name,
       description: tool.description,
       category: tool.category, // Keep original category
-      displayCategory: tool.category === 'helper' ? 'cdp' : tool.category, // For display badges
+      displayCategory: tool.category === 'helper' ? 'cdp' : tool.category, // Helper tools are CDP-related
       callCount: metrics.toolUsage.get(tool.name) || 0,
     }))
 

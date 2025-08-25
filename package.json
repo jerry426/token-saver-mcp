@@ -60,7 +60,7 @@
     }
   },
   "scripts": {
-    "build": "cd vscode-internals-gateway && npm run compile && cd ../standalone-server && pnpm build",
+    "build": "cd vscode-internals-gateway && npm run compile",
     "dev": "cd vscode-internals-gateway && pnpm dev",
     "prepare": "nr update",
     "update": "vscode-ext-gen --output src/generated/meta.ts",
@@ -80,8 +80,10 @@
     "better-sqlite3": "^12.2.0",
     "chrome-remote-interface": "^0.33.3",
     "express": "^5.1.0",
+    "node-pty": "^1.0.0",
     "semver": "^7.7.2",
     "sharp": "^0.34.3",
+    "ws": "^8.18.0",
     "zod": "^3.25.74"
   },
   "devDependencies": {
@@ -92,6 +94,7 @@
     "@types/express": "^5.0.3",
     "@types/node": "^22.13.4",
     "@types/vscode": "^1.97.0",
+    "@types/ws": "^8.5.13",
     "@vscode/vsce": "^3.2.2",
     "bumpp": "^10.0.3",
     "eslint": "^9.20.1",
